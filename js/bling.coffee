@@ -1532,20 +1532,20 @@ $.depends 'hook', ->
 		map = new Map()
 		keyMakers = []
 		$.inherit {
-			index: (keyFunc) ->
-				if keyMakers.indexOf(keyFunc) is -1
-					keyMakers.push keyFunc
-					map.set(keyFunc.toString(), new Map())
+			index: (keyMaker) ->
+				if keyMakers.indexOf(keyMaker) is -1
+					keyMakers.push keyMaker
+					map.set(keyMaker, new Map())
 				for x in @
-					key = keyFunc x
-					_map = map.get keyFunc.toString()
+					key = keyMaker x
+					_map = map.get keyMaker
 					unless _map.has key
 						_map.set key, $()
 					_map.get(key).push x
 				@
 			query: (criteria) ->
 				for keyMaker in keyMakers
-					_map = map.get keyMaker.toString()
+					_map = map.get keyMaker
 					if _map.has key = keyMaker criteria
 						return _map.get(key)
 				return $()
@@ -2342,7 +2342,7 @@ $.plugin
 	register 'get', (o, opts) -> reduce opts[o.name], opts
 	return $: { render }
 $.plugin
-	provides: "sortBy,sortedIndex,sortedInsert"
+	provides: "sortBy,sortedIndex,sortedInsert,groupBy"
 , ->
 	$:
 		sortedIndex: (array, item, sorter, lo = 0, hi = array.length) ->
@@ -2368,12 +2368,14 @@ $.plugin
 		@
 	groupBy: (sorter) ->
 		groups = {}
+		
 		switch $.type sorter
 			when 'array','bling'
 				for x in @
-					c = (x[k] for k in key).join ","
-					(groups[c] or= $()).push x
-			when 'string' for x in @ then (groups[x[key]] or= $()).push x
+					c = (x[k] for k in sorter).join ","
+					(groups[c] or= $()).push( x)
+			when 'string' then for x in @ then (groups[x[sorter]] or= $()).push( x)
+			when 'function' then for x in @ then (groups[sorter(x)] or= $()).push( x)
 		return $.valuesOf groups
 $.plugin
 	provides: "StateMachine"
