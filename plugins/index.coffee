@@ -3,20 +3,20 @@ $.depends 'hook', ->
 		map = new Map()
 		keyMakers = []
 		$.inherit {
-			index: (keyFunc) ->
-				if keyMakers.indexOf(keyFunc) is -1
-					keyMakers.push keyFunc
-					map.set(keyFunc.toString(), new Map())
+			index: (keyMaker) ->
+				if keyMakers.indexOf(keyMaker) is -1
+					keyMakers.push keyMaker
+					map.set(keyMaker, new Map())
 				for x in @
-					key = keyFunc x
-					_map = map.get keyFunc.toString()
+					key = keyMaker x
+					_map = map.get keyMaker
 					unless _map.has key
 						_map.set key, $()
 					_map.get(key).push x
 				@
 			query: (criteria) ->
 				for keyMaker in keyMakers
-					_map = map.get keyMaker.toString()
+					_map = map.get keyMaker
 					if _map.has key = keyMaker criteria
 						return _map.get(key)
 				return $()
