@@ -2,9 +2,15 @@ COFFEE=node_modules/.bin/coffee
 UGLIFY=node_modules/.bin/uglifyjs
 UGLIFY_OPTS?=--screw-ie8
 JLDOM=node_modules/jldom
+
 MOCHA=node_modules/.bin/mocha
 MOCHA_FMT?=dot
-MOCHA_OPTS=--compilers coffee:coffee-script/register --globals document,window,Bling,$$,_ -R ${MOCHA_FMT} -s 500 --bail
+MOCHA_OPTS=--compilers coffee:coffee-script/register \
+	--globals document,window,Bling,$$,_ \
+	-R ${MOCHA_FMT} \
+	-s 500 \
+	--bail
+
 GPP=gpp
 GPP_OPTS=-U '' '' '(' ',' ')' '(' ')' '\#' '' \
 	-M '\#' '\n' ' ' ' ' '\n' '(' ')' \
@@ -12,16 +18,15 @@ GPP_OPTS=-U '' '' '(' ',' ')' '(' ')' '\#' '' \
 	+c '\#\#\#' '\#\#\#' \
 	+s '"' '"' "\\" \
 	+s "'" "'" "\\" -n
+GPP_FILTER=sed -E 's/^	*# .*$$//g' | grep -v '^ *$$' | $(GPP) $(GPP_OPTS)
 
-TEST_FILES=$(shell ls test/*.coffee | grep -v setup.coffee | sort -f )
-TIME_FILES=$(subst .coffee,.coffee.time,$(shell ls bench/*.coffee | grep -v setup.coffee | sort -f ))
 
 all: release
 
 release: dist/bling.js
 
-test: $(JLDOM) $(MOCHA) dist/bling.js $(TEST_FILES)
-	@echo "All tests are passing."
+test: $(JLDOM) $(MOCHA) dist/bling.js $(filter-out setup.coffee, $(wildcard test/*.coffee))
+	# All tests are passing.
 
 test/bling.coffee: bling.coffee
 	# Testing $<
@@ -30,14 +35,6 @@ test/bling.coffee: bling.coffee
 test/%.coffee: plugins/%.coffee bling.coffee
 	# Testing $<
 	@$(MOCHA) $(MOCHA_OPTS) $@ && touch $@
-
-bench: release $(TIME_FILES)
-	@echo "All benchmarks are complete."
-	@cat bench/*.time
-
-bench/%.coffee.time: bench/%.coffee plugins/%.coffee bench/setup.coffee bling.coffee Makefile
-	@echo Running $<
-	@$(COFFEE) $< > $@
 
 site: dist/bling.js test $(UGLIFY)
 	@git stash save &> /dev/null
@@ -58,13 +55,13 @@ site: dist/bling.js test $(UGLIFY)
 	@git stash pop || true
 
 dist/bling.js: dist/bling.coffee $(COFFEE)
-	@echo Compiling $< to $@...
+	#  Compiling $< to $@...
 	@(cd dist && ../node_modules/.bin/coffee -cm bling.coffee)
 
 dist/bling.coffee: bling.coffee $(shell ls plugins/*.coffee | sort -f)
-	@echo Packing plugins into $@...
+	#  Packing plugins into $@...
 	@mkdir -p dist
-	@cat $^ | sed -E 's/^	*# .*$$//g' | grep -v '^ *$$' | $(GPP) $(GPP_OPTS) > $@
+	@cat $^ | $(GPP_FILTER) > $@
 
 clean:
 	rm -rf dist/*
@@ -81,4 +78,4 @@ $(JLDOM):
 $(UGLIFY):
 	npm install uglify-js
 
-.PHONY: all bling clean release site test
+.PHONY: all clean release site test
