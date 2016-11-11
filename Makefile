@@ -55,12 +55,12 @@ site: dist/bling.js test $(UGLIFY)
 		&& (gzip -f9c bling.min.js > bling.min.js.gz)) > /dev/null
 	# Commit to site branch...
 	@git add -f js/bling* js/package.json doc/* &> /dev/null
-	@git commit --no-gpg-sign -am "make site" || true &> /dev/null
+	@git commit --no-gpg-sign -am "make site" &> /dev/null || true
 	@sleep 1
 	# Restoring master...
 	@git checkout master &> /dev/null
 	@sleep 1
-	@git stash pop || true &> /dev/null
+	@git stash pop &> /dev/null || true
 
 dist/bling.js: dist/bling.coffee $(COFFEE)
 	#  Compiling $< to $@...
