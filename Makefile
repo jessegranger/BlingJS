@@ -1,3 +1,4 @@
+SHELL=/bin/bash
 COFFEE=node_modules/.bin/coffee
 UGLIFY=node_modules/.bin/uglifyjs
 UGLIFY_OPTS?=--screw-ie8
