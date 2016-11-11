@@ -40,7 +40,7 @@ site: dist/bling.js test $(UGLIFY)
 	# Stashing master...
 	@git stash save &> /dev/null
 	# Checking out site...
-	@git checkout site > /dev/null
+	@git checkout site &> /dev/null
 	@sleep 1
 	# Copy dist/ to js/
 	@cp dist/bling* js/
@@ -53,13 +53,13 @@ site: dist/bling.js test $(UGLIFY)
 		&& ../$(UGLIFY) bling.js -c --source-map bling.min.js.map --in-source-map bling.js.map  -m -r '$,Bling,window,document' --screw-ie8 -o bling.min.js \
 		&& (gzip -f9c bling.min.js > bling.min.js.gz)) > /dev/null
 	# Commit to site branch...
-	@git add -f js/bling* js/package.json doc/* > /dev/null
-	@git commit --no-gpg-sign -am "make site" || true > /dev/null
+	@git add -f js/bling* js/package.json doc/* &> /dev/null
+	@git commit --no-gpg-sign -am "make site" || true &> /dev/null
 	@sleep 1
 	# Restoring master...
-	@git checkout master > /dev/null
+	@git checkout master &> /dev/null
 	@sleep 1
-	@git stash pop || true > /dev/null
+	@git stash pop || true &> /dev/null
 
 dist/bling.js: dist/bling.coffee $(COFFEE)
 	#  Compiling $< to $@...
