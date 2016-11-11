@@ -37,22 +37,29 @@ test/%.coffee: plugins/%.coffee bling.coffee
 	@$(MOCHA) $(MOCHA_OPTS) $@ && touch $@
 
 site: dist/bling.js test $(UGLIFY)
-	git stash save &> /dev/null
-	git checkout site
-	sleep 1
-	cp dist/bling* js/
-	git show master:package.json > js/package.json
-	mkdir -p doc
-	git show master:doc/index.html > doc/index.html
-	(cd js \
+	# Stashing master...
+	@git stash save &> /dev/null
+	# Checking out site...
+	@git checkout site > /dev/null
+	@sleep 1
+	# Copy dist/ to js/
+	@cp dist/bling* js/
+	@git show master:package.json > js/package.json
+	# Update documentation...
+	@mkdir -p doc
+	@git show master:doc/index.html > doc/index.html
+	# Minify and compress...
+	@(cd js \
 		&& ../$(UGLIFY) bling.js -c --source-map bling.min.js.map --in-source-map bling.js.map  -m -r '$,Bling,window,document' --screw-ie8 -o bling.min.js \
-		&& (gzip -f9c bling.min.js > bling.min.js.gz))
-	git add -f js/bling* js/package.json doc/*
-	git commit --no-gpg-sign -am "make site" || true
-	sleep 1
-	git checkout master
-	sleep 1
-	git stash pop || true
+		&& (gzip -f9c bling.min.js > bling.min.js.gz)) > /dev/null
+	# Commit to site branch...
+	@git add -f js/bling* js/package.json doc/* > /dev/null
+	@git commit --no-gpg-sign -am "make site" || true > /dev/null
+	@sleep 1
+	# Restoring master...
+	@git checkout master > /dev/null
+	@sleep 1
+	@git stash pop || true > /dev/null
 
 dist/bling.js: dist/bling.coffee $(COFFEE)
 	#  Compiling $< to $@...
