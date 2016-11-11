@@ -6209,7 +6209,9 @@
         pack: function(m) {
           var ret;
           ret = '';
-          for(var k of m.keys()) { ret += packOne(k)+packOne(m.get(k)) };
+          m.forEach(function(v, k) {
+            return ret += packOne(k) + packOne(v);
+          });
           return ret;
         },
         unpack: function(s) {
