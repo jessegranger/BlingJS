@@ -48,7 +48,7 @@ site: dist/bling.js test $(UGLIFY)
 		&& ../$(UGLIFY) bling.js -c --source-map bling.min.js.map --in-source-map bling.js.map  -m -r '$,Bling,window,document' --screw-ie8 -o bling.min.js \
 		&& (gzip -f9c bling.min.js > bling.min.js.gz))
 	@git add -f js/bling* js/package.json doc/*
-	@git commit -am "make site" || true
+	@git commit --no-gpg-sign -am "make site" || true
 	@sleep 1
 	@git checkout master
 	@sleep 1
