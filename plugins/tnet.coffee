@@ -36,7 +36,8 @@ $.plugin
 			symbol: "M"
 			pack: (m) ->
 				ret = ''
-				`for(var k of m.keys()) { ret += packOne(k)+packOne(m.get(k)) }`
+				m.forEach (v, k) ->
+					ret += packOne(k)+packOne(v)
 				ret
 			unpack: (s) ->
 				m = new Map()
