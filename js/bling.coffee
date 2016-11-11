@@ -2883,6 +2883,19 @@ $.plugin
 					[one, s] = unpackOne(s)
 					data.push(one)
 				data
+		"map":
+			symbol: "M"
+			pack: (m) ->
+				ret = ''
+				`for(var k of m.keys()) { ret += packOne(k)+packOne(m.get(k)) }`
+				ret
+			unpack: (s) ->
+				m = new Map()
+				while s.length > 0
+					[k, s] = unpackOne(s)
+					[v, s] = unpackOne(s)
+					m.set(k, v)
+				m
 		"bling":
 			symbol: "$"
 			pack: (a) -> (packOne(y) for y in a).join('')
@@ -3215,6 +3228,7 @@ $.plugin
 		register "unknown",   base
 		register "object",    is: (o) -> o? and (typeof o is "object") and (o.constructor?.name in [undefined, "Object"])
 		register "array",     is: Array.isArray or (o) -> isType Array, o
+		register "map",       is: (o) -> o and (o instanceof Map)
 		register "buffer",    is: $.global.Buffer.isBuffer or -> false 
 		register "error",     is: (o) -> isType 'Error', o
 		register "regexp",    is: (o) -> isType 'RegExp', o

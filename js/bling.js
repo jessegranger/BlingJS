@@ -6204,6 +6204,25 @@
           return data;
         }
       },
+      "map": {
+        symbol: "M",
+        pack: function(m) {
+          var ret;
+          ret = '';
+          for(var k of m.keys()) { ret += packOne(k)+packOne(m.get(k)) };
+          return ret;
+        },
+        unpack: function(s) {
+          var k, m, ref, ref1, v;
+          m = new Map();
+          while (s.length > 0) {
+            ref = unpackOne(s), k = ref[0], s = ref[1];
+            ref1 = unpackOne(s), v = ref1[0], s = ref1[1];
+            m.set(k, v);
+          }
+          return m;
+        }
+      },
       "bling": {
         symbol: "$",
         pack: function(a) {
@@ -6753,6 +6772,11 @@
       register("array", {
         is: Array.isArray || function(o) {
           return isType(Array, o);
+        }
+      });
+      register("map", {
+        is: function(o) {
+          return o && (o instanceof Map);
         }
       });
       register("buffer", {
