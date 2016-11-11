@@ -32,6 +32,19 @@ $.plugin
 					[one, s] = unpackOne(s)
 					data.push(one)
 				data
+		"map":
+			symbol: "M"
+			pack: (m) ->
+				ret = ''
+				`for(var k of m.keys()) { ret += packOne(k)+packOne(m.get(k)) }`
+				ret
+			unpack: (s) ->
+				m = new Map()
+				while s.length > 0
+					[k, s] = unpackOne(s)
+					[v, s] = unpackOne(s)
+					m.set(k, v)
+				m
 		"bling":
 			symbol: "$"
 			pack: (a) -> (packOne(y) for y in a).join('')
