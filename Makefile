@@ -18,7 +18,7 @@ GPP_OPTS=-U '' '' '(' ',' ')' '(' ')' '\#' '' \
 	+c '\#\#\#' '\#\#\#' \
 	+s '"' '"' "\\" \
 	+s "'" "'" "\\" -n
-GPP_FILTER=sed -E 's/^	*# .*$$//g' | grep -v '^ *$$' | $(GPP) $(GPP_OPTS)
+GPP_FILTER=sed -E 's/^	*\# .*$$//g' | grep -v '^ *$$' | $(GPP) $(GPP_OPTS)
 
 
 all: release
