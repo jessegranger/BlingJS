@@ -20,6 +20,12 @@ describe "$.TNET", ->
 				assert.deepEqual $.TNET.parse("12:1:1#1:2#1:3#$"), $(1,2,3)
 			it "object", ->
 				assert.deepEqual $.TNET.parse("16:1:a'1:1#1:b'1:2#}"), {a:1,b:2}
+			it "map", ->
+				m = $.TNET.parse("16:1:a'1:1#1:b'1:2#M")
+				assert m instanceof Map
+				assert.equal "map", $.type(m)
+				assert.equal m.get('a'), 1
+				assert.equal m.get('b'), 2
 			it "function", ->
 				f = $.TNET.parse "29:2:sq'4:1:x']13:return x * x;')"
 				assert $.is 'function', f
@@ -67,6 +73,11 @@ describe "$.TNET", ->
 				assert.equal $.TNET.stringify($ 1,2,3), "12:1:1#1:2#1:3#$"
 			it "object", ->
 				assert.equal $.TNET.stringify({a:1,b:2}), "16:1:a'1:1#1:b'1:2#}"
+			it "map", ->
+				m = new Map()
+				m.set 'a', 1
+				m.set 'b', 2
+				assert.equal $.TNET.stringify(m), "16:1:a'1:1#1:b'1:2#M"
 			it "function", ->
 				assert.equal $.TNET.stringify((x)->x*x), "27:0:'4:1:x']13:return x * x;')"
 			it "function with name", ->
