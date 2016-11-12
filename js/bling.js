@@ -593,6 +593,251 @@
   });
 
   $.plugin({
+    provides: "compress, decompress"
+  }, function() {
+    var _compress, _decompress, chr, f, pow;
+    f = String.fromCharCode;
+    chr = function(i) {
+      return f(i + 32);
+    };
+    pow = Math.pow;
+    _compress = function(input) {
+      var c, data, data_pos, data_val, dict, dictSize, dictToCreate, doBitsAndOne, doSomeBits, enlargeIn, i1, len1, numBits, value, w, wc;
+      if (input === null || input === (void 0) || input === "") {
+        return input;
+      }
+      dict = {};
+      dictToCreate = {};
+      c = "";
+      wc = "";
+      w = "";
+      enlargeIn = 2;
+      dictSize = 3;
+      numBits = 2;
+      data = [];
+      data_val = 0;
+      data_pos = 0;
+      doSomeBits = function(how_many_bits, value) {
+        var i, i1, ref;
+        if (value == null) {
+          value = 0;
+        }
+        for (i = i1 = 0, ref = numBits; i1 < ref; i = i1 += 1) {
+          data_val = (data_val << 1) | value;
+          if (data_pos === 14) {
+            data_pos = 0;
+            data.push(chr(data_val));
+            data_val = 0;
+          } else {
+            data_pos++;
+          }
+          value = 0;
+        }
+        value = w.charCodeAt(0);
+        return doBitsAndOne(how_many_bits, value);
+      };
+      doBitsAndOne = function(how_many_bits, value) {
+        var i, i1, ref, results;
+        if (value == null) {
+          value = 0;
+        }
+        results = [];
+        for (i = i1 = 0, ref = how_many_bits; i1 < ref; i = i1 += 1) {
+          data_val = (data_val << 1) | (value & 1);
+          if (data_pos === 14) {
+            data_pos = 0;
+            data.push(chr(data_val));
+            data_val = 0;
+          } else {
+            data_pos++;
+          }
+          results.push(value = value >> 1);
+        }
+        return results;
+      };
+      for (i1 = 0, len1 = input.length; i1 < len1; i1++) {
+        c = input[i1];
+        if (!(c in dict)) {
+          dict[c] = dictSize++;
+          dictToCreate[c] = true;
+        }
+        wc = w + c;
+        if (wc in dict) {
+          w = wc;
+        } else {
+          if (w in dictToCreate) {
+            if (w.charCodeAt(0) < 256) {
+              doSomeBits(8);
+            } else {
+              doSomeBits(16, 1);
+            }
+            enlargeIn--;
+            if (enlargeIn === 0) {
+              enlargeIn = pow(2, numBits);
+              numBits++;
+            }
+            delete dictToCreate[w];
+          } else {
+            value = dict[w];
+            doBitsAndOne(numBits, value);
+          }
+          enlargeIn--;
+          if (enlargeIn === 0) {
+            enlargeIn = pow(2, numBits);
+            numBits++;
+          }
+          dict[wc] = dictSize++;
+          w = String(c);
+        }
+      }
+      if (w !== "") {
+        if (w in dictToCreate) {
+          if (w.charCodeAt(0) < 256) {
+            doSomeBits(8);
+          } else {
+            doSomeBits(16, 1);
+          }
+          enlargeIn--;
+          if (enlargeIn === 0) {
+            enlargeIn = pow(2, numBits);
+            numBits++;
+          }
+          delete dictToCreate[w];
+        } else {
+          value = dict[w];
+          doBitsAndOne(numBits, value);
+        }
+        enlargeIn--;
+        if (enlargeIn === 0) {
+          enlargeIn = pow(2, numBits);
+          numBits++;
+        }
+      }
+      doBitsAndOne(numBits, 2);
+      while (true) {
+        data_val = data_val << 1;
+        if (data_pos === 14) {
+          data.push(chr(data_val));
+          break;
+        } else {
+          data_pos++;
+        }
+      }
+      return data.join('');
+    };
+    _decompress = function(length, resetValue, getNextValue) {
+      var bits, c, data, dict, dictSize, doBits, enlargeIn, entry, i, next, numBits, resb, result, w;
+      if (length === 0) {
+        return "";
+      }
+      dict = [];
+      enlargeIn = 4;
+      dictSize = 4;
+      numBits = 3;
+      entry = "";
+      result = [];
+      next = i = w = resb = c = null;
+      data = {
+        val: getNextValue(0),
+        position: resetValue,
+        index: 1
+      };
+      if (isNaN(data.val) || !isFinite(data.val) || (data.val == null)) {
+        return "";
+      }
+      dict[0] = 0;
+      dict[1] = 1;
+      dict[2] = 2;
+      doBits = function(bits, maxpower, power) {
+        var r;
+        if (power == null) {
+          power = 1;
+        }
+        while (power !== maxpower) {
+          resb = data.val & data.position;
+          data.position >>= 1;
+          if (data.position === 0) {
+            data.position = resetValue;
+            data.val = getNextValue(data.index++);
+          }
+          r = resb > 0 ? 1 : 0;
+          bits |= r * power;
+          power <<= 1;
+        }
+        return bits;
+      };
+      bits = doBits(0, 4, 1);
+      switch (next = bits) {
+        case 0:
+        case 1:
+          c = f(doBits(0, pow(2, 8 * (c + 1)), 1));
+          break;
+        case 2:
+          return "";
+      }
+      dict[3] = c;
+      w = c;
+      result.push(c);
+      while (true) {
+        if (data.index > length) {
+          return "";
+        }
+        switch (c = doBits(0, pow(2, numBits), 1)) {
+          case 0:
+          case 1:
+            dict[dictSize++] = f(doBits(0, pow(2, 8 * (c + 1)), 1));
+            c = dictSize - 1;
+            enlargeIn--;
+            break;
+          case 2:
+            return result.join('');
+        }
+        if (enlargeIn === 0) {
+          enlargeIn = pow(2, numBits);
+          numBits++;
+        }
+        if (dict[c]) {
+          entry = dict[c];
+        } else {
+          if (c === dictSize) {
+            entry = w + w.charAt(0);
+          } else {
+            return "";
+          }
+        }
+        result.push(entry);
+        dict[dictSize++] = w + entry.charAt(0);
+        enlargeIn--;
+        w = entry;
+        if (enlargeIn === 0) {
+          enlargeIn = pow(2, numBits);
+          numBits++;
+        }
+      }
+    };
+    return {
+      $: {
+        compress: function(input) {
+          if (input) {
+            return _compress(input, 15) + " ";
+          } else {
+            return "";
+          }
+        },
+        decompress: function(input) {
+          if (input) {
+            return _decompress(input.length, 16384, function(i) {
+              return input.charCodeAt(i) - 32;
+            });
+          } else {
+            return "";
+          }
+        }
+      }
+    };
+  });
+
+  $.plugin({
     provides: 'config',
     depends: 'core'
   }, function() {
