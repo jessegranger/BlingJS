@@ -25,7 +25,7 @@ $.plugin
 			s[1] = 1
 			next(); next(); next();
 			n
-	random.seed = $.now
+	random.seed = +new Date()
 
 	$: random: $.extend random,
 			real: real = (min, max) ->
