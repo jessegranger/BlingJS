@@ -953,7 +953,7 @@ $.plugin
 	}
 $.plugin
 	provides: "delay,immediate,interval"
-	depends: "is,select,extend,bound"
+	depends: "is,select,extend,bound,core"
 , ->
 	$:
 		delay: do ->
@@ -989,7 +989,7 @@ $.plugin
 						ref: (f) -> f.timeout?.ref()
 					}
 				else throw new Error "Bad arguments to $.delay (expected: int,function given: #{$.type n},#{$.type f})"
-		immediate: do -> switch
+		immediate: switch
 			when 'setImmediate' of $.global then $.global.setImmediate
 			when process?.nextTick? then process.nextTick
 			else (f) -> setTimeout(f, 0)
@@ -2366,7 +2366,7 @@ $.plugin
 			s[1] = 1
 			next(); next(); next();
 			n
-	random.seed = $.now
+	random.seed = +new Date()
 	$: random: $.extend random,
 			real: real = (min, max) ->
 				if not min?

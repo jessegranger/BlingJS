@@ -2056,7 +2056,7 @@
 
   $.plugin({
     provides: "delay,immediate,interval",
-    depends: "is,select,extend,bound"
+    depends: "is,select,extend,bound,core"
   }, function() {
     return {
       $: {
@@ -4981,7 +4981,7 @@
         return n;
       }
     });
-    random.seed = $.now;
+    random.seed = +new Date();
     return {
       $: {
         random: $.extend(random, {
