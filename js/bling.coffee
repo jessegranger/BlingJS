@@ -3047,9 +3047,11 @@ $.plugin
 			pack: (a) -> (packOne(y) for y in a).join('')
 			unpack: (s) ->
 				data = []
+				unpackingStack.push data
 				while s.length > 0
 					[one, s] = unpackOne(s)
 					data.push(one)
+				unpackingStack.pop()
 				data
 		"map":
 			symbol: "M"
@@ -3060,19 +3062,23 @@ $.plugin
 				ret
 			unpack: (s) ->
 				m = new Map()
+				unpackingStack.push m
 				while s.length > 0
 					[k, s] = unpackOne(s)
 					[v, s] = unpackOne(s)
 					m.set(k, v)
+				unpackingStack.pop()
 				m
 		"bling":
 			symbol: "$"
 			pack: (a) -> (packOne(y) for y in a).join('')
 			unpack: (s) ->
 				data = $()
+				unpackingStack.push data
 				while s.length > 0
 					[one, s] = unpackOne(s)
 					data.push(one)
+				unpackingStack.pop()
 				data
 		"object":
 			symbol: "}"
@@ -3080,10 +3086,12 @@ $.plugin
 				(packOne(k)+packOne(v) for k,v of o when k isnt "constructor" and o.hasOwnProperty(k)).join ''
 			unpack: (s) ->
 				data = {}
+				unpackingStack.push data
 				while s.length > 0
 					[key, s] = unpackOne(s)
 					[value, s] = unpackOne(s)
 					data[key] = value
+				unpackingStack.pop()
 				data
 		"function":
 			symbol: ")"
@@ -3117,15 +3125,24 @@ $.plugin
 				unless 'constructor' of o
 					throw new Error("TNET: cant pack non-class as class")
 				unless o.constructor of class_index
-					throw new Error("TNET: cant pack unregistered class (name: #{o.constructor.name}")
-				packOne(class_index[o.constructor]) + packOne(o, "object")
+					throw new Error("TNET: cant pack unregistered class (name: #{o.constructor.name})")
+				ret = packOne(class_index[o.constructor])
+				packingStack.pop() 
+				ret + packOne(o, "object") 
 			unpack: (s) ->
 				[i, rest] = unpackOne(s)
 				[obj, rest] = unpackOne(rest)
 				if i <= classes.length
 					obj.__proto__ = classes[i - 1].prototype
-				else throw new Error("TNET: attempt to unpack unregistered class index: #{i}")
+				else
+					CLEAR(unpackingStack)
+					throw new Error("TNET: attempt to unpack unregistered class index: #{i}")
 				obj
+		"circular reference":
+			symbol: "@"
+			pack: (i) -> String i
+			unpack: (s) ->
+				unpackingStack[parseInt s, 10]
 	makeFunction = (name, args, body) ->
 		eval("var f = function #{name}(#{args}){#{body}}")
 		return f
@@ -3136,28 +3153,37 @@ $.plugin
 	reverseLookup = {} 
 	do -> for t,v of Types
 		reverseLookup[v.symbol] = v
+	unpackingStack = []
 	unpackOne = (data) ->
-		if data
-			if (i = data.indexOf ":") > 0
-				di = parseInt data[0...i], 10 
-				if isFinite(di) and $.is 'number', di 
-					if i < (x = i + 1 + di) < data.length
-						if sym = reverseLookup[data[x]]
-							return [
-								sym.unpack(data[i+1...x]),
-								data[x+1...]
-							]
+		if data and (i = data.indexOf ":") > 0 
+			di = parseInt data[0...i], 10 
+			if isFinite(di) and $.is 'number', di 
+				if i < (x = i + 1 + di) < data.length 
+					if sym = reverseLookup[data[x]] 
+						return [ 
+							sym.unpack(data[i+1...x]),
+							data[x+1...]
+						]
 		return [ undefined, data ]
+	
+	packingStack = [] 
 	packOne = (x, forceType) ->
-		if forceType?
-			tx = forceType
-		else
-			tx = $.type x
-			if tx is "unknown" and not (x.constructor?.name in [undefined, "Object"])
-				tx = "class instance"
+		tx = forceType ? $.type x
+		if tx is "unknown" and not (x.constructor?.name in [undefined, "Object"])
+			tx = "class instance"
 		unless (t = Types[tx])?
+			(packingStack.splice(0, packingStack.length))
 			throw new Error("TNET: I don't know how to pack type '#{tx}' (#{x.constructor?.name})")
-		data = t.pack(x)
+		if (i = packingStack.indexOf x) > -1
+			t = Types["circular reference"]
+			x = i 
+		packingStack.push(x)
+		try
+			data = t.pack(x)
+		catch err
+			(packingStack.splice(0, packingStack.length))
+			throw err
+		packingStack.pop()
 		return (data.length) + ":" + data + t.symbol
 	$:
 		TNET:

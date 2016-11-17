@@ -6386,7 +6386,7 @@
     provides: 'TNET',
     depends: "type, string, function"
   }, function() {
-    var Types, class_index, classes, makeFunction, packOne, register, reverseLookup, unpackOne;
+    var Types, class_index, classes, makeFunction, packOne, packingStack, register, reverseLookup, unpackOne, unpackingStack;
     Types = {
       "number": {
         symbol: "#",
@@ -6442,10 +6442,12 @@
         unpack: function(s) {
           var data, one, ref;
           data = [];
+          unpackingStack.push(data);
           while (s.length > 0) {
             ref = unpackOne(s), one = ref[0], s = ref[1];
             data.push(one);
           }
+          unpackingStack.pop();
           return data;
         }
       },
@@ -6462,11 +6464,13 @@
         unpack: function(s) {
           var k, m, ref, ref1, v;
           m = new Map();
+          unpackingStack.push(m);
           while (s.length > 0) {
             ref = unpackOne(s), k = ref[0], s = ref[1];
             ref1 = unpackOne(s), v = ref1[0], s = ref1[1];
             m.set(k, v);
           }
+          unpackingStack.pop();
           return m;
         }
       },
@@ -6487,10 +6491,12 @@
         unpack: function(s) {
           var data, one, ref;
           data = $();
+          unpackingStack.push(data);
           while (s.length > 0) {
             ref = unpackOne(s), one = ref[0], s = ref[1];
             data.push(one);
           }
+          unpackingStack.pop();
           return data;
         }
       },
@@ -6513,11 +6519,13 @@
         unpack: function(s) {
           var data, key, ref, ref1, value;
           data = {};
+          unpackingStack.push(data);
           while (s.length > 0) {
             ref = unpackOne(s), key = ref[0], s = ref[1];
             ref1 = unpackOne(s), value = ref1[0], s = ref1[1];
             data[key] = value;
           }
+          unpackingStack.pop();
           return data;
         }
       },
@@ -6556,13 +6564,16 @@
       "class instance": {
         symbol: "C",
         pack: function(o) {
+          var ret;
           if (!('constructor' in o)) {
             throw new Error("TNET: cant pack non-class as class");
           }
           if (!(o.constructor in class_index)) {
-            throw new Error("TNET: cant pack unregistered class (name: " + o.constructor.name);
+            throw new Error("TNET: cant pack unregistered class (name: " + o.constructor.name + ")");
           }
-          return packOne(class_index[o.constructor]) + packOne(o, "object");
+          ret = packOne(class_index[o.constructor]);
+          packingStack.pop();
+          return ret + packOne(o, "object");
         },
         unpack: function(s) {
           var i, obj, ref, ref1, rest;
@@ -6571,9 +6582,19 @@
           if (i <= classes.length) {
             obj.__proto__ = classes[i - 1].prototype;
           } else {
+            CLEAR(unpackingStack);
             throw new Error("TNET: attempt to unpack unregistered class index: " + i);
           }
           return obj;
+        }
+      },
+      "circular reference": {
+        symbol: "@",
+        pack: function(i) {
+          return String(i);
+        },
+        unpack: function(s) {
+          return unpackingStack[parseInt(s, 10)];
         }
       }
     };
@@ -6596,36 +6617,45 @@
       }
       return results;
     })();
+    unpackingStack = [];
     unpackOne = function(data) {
       var di, i, ref, sym, x;
-      if (data) {
-        if ((i = data.indexOf(":")) > 0) {
-          di = parseInt(data.slice(0, i), 10);
-          if (isFinite(di) && $.is('number', di)) {
-            if ((i < (ref = (x = i + 1 + di)) && ref < data.length)) {
-              if (sym = reverseLookup[data[x]]) {
-                return [sym.unpack(data.slice(i + 1, x)), data.slice(x + 1)];
-              }
+      if (data && (i = data.indexOf(":")) > 0) {
+        di = parseInt(data.slice(0, i), 10);
+        if (isFinite(di) && $.is('number', di)) {
+          if ((i < (ref = (x = i + 1 + di)) && ref < data.length)) {
+            if (sym = reverseLookup[data[x]]) {
+              return [sym.unpack(data.slice(i + 1, x)), data.slice(x + 1)];
             }
           }
         }
       }
       return [void 0, data];
     };
+    packingStack = [];
     packOne = function(x, forceType) {
-      var data, ref, ref1, ref2, t, tx;
-      if (forceType != null) {
-        tx = forceType;
-      } else {
-        tx = $.type(x);
-        if (tx === "unknown" && !((ref = (ref1 = x.constructor) != null ? ref1.name : void 0) === (void 0) || ref === "Object")) {
-          tx = "class instance";
-        }
+      var data, err, i, ref, ref1, ref2, t, tx;
+      tx = forceType != null ? forceType : $.type(x);
+      if (tx === "unknown" && !((ref = (ref1 = x.constructor) != null ? ref1.name : void 0) === (void 0) || ref === "Object")) {
+        tx = "class instance";
       }
       if ((t = Types[tx]) == null) {
+        packingStack.splice(0, packingStack.length);
         throw new Error("TNET: I don't know how to pack type '" + tx + "' (" + ((ref2 = x.constructor) != null ? ref2.name : void 0) + ")");
       }
-      data = t.pack(x);
+      if ((i = packingStack.indexOf(x)) > -1) {
+        t = Types["circular reference"];
+        x = i;
+      }
+      packingStack.push(x);
+      try {
+        data = t.pack(x);
+      } catch (error1) {
+        err = error1;
+        packingStack.splice(0, packingStack.length);
+        throw err;
+      }
+      packingStack.pop();
       return data.length + ":" + data + t.symbol;
     };
     return {
