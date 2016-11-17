@@ -97,5 +97,37 @@ describe "$.TNET", ->
 				assert.equal $.TNET.stringify(f), "15:1:1#8:1:x'1:4#}C"
 				g = $.TNET.parse $.TNET.stringify(f)
 				assert.equal g.sq(), 16
-
+			describe "circular references", ->
+				it "work in objects", ->
+					x = {}
+					x.y = { x: x }
+					str = $.TNET.stringify x
+					assert.equal str, "15:1:y'8:1:x'1:0@}}"
+					z = $.TNET.parse str
+					assert.equal z.y.x, z
+				it "work in arrays", ->
+					x = []
+					x.push(1)
+					x.push(x)
+					str = $.TNET.stringify x
+					assert.equal str, "8:1:1#1:0@]"
+					z = $.TNET.parse str
+					assert.equal z[0], 1
+					assert.equal z[1], z
+				it "work when deeply nested", ->
+					a = [ { x: { y: [ { } ] } } ]
+					a[0].x.y[0].z = a[0].x
+					str = $.TNET.stringify a
+					assert.equal str, "31:27:1:x'19:1:y'11:8:1:z'1:2@}]}}]"
+					b = $.TNET.parse str
+					assert.equal b[0].x.y[0].z, b[0].x
+				it "work in class instances", ->
+					class Foo
+					f = new Foo()
+					f.x = f
+					$.TNET.registerClass Foo
+					str = $.TNET.stringify f
+					assert.equal str, "15:1:1#8:1:x'1:0@}C"
+					g = $.TNET.parse str
+					assert.equal g.x, g
 
