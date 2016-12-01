@@ -17,11 +17,11 @@ $.plugin
 	sortBy: (sorter) ->
 		a = $()
 		for item in @
-			n = $.sortedIndex a, item, sorter
-			a.splice n, 0, item
+			a.sortedInsert(item, sorter)
 		a
 	sortedInsert: (item, sorter) ->
-		@splice ($.sortedIndex @, item, sorter), 0, item
+		if @length is 0 then @push item
+		else @splice ($.sortedIndex @, item, sorter), 0, item
 		@
 	groupBy: (sorter) ->
 		groups = {}
