@@ -3,7 +3,7 @@ $.plugin
 	depends: "StateMachine, type, dom"
 , ->
 	class SynthMachine extends $.StateMachine
-		common = # a common template included in lots of the state machine rules
+		common = # a common subset of rules used in many states
 			"#":  -> 2
 			".":  -> 3
 			"[":  -> 4
@@ -13,52 +13,52 @@ $.plugin
 			"\t": -> @emitText()
 			"\n": -> @emitText()
 			"\r": -> @emitText()
-			",":  -> @emitNodeAndReparent null
-			"+":  -> @emitNodeAndReparent @cursor
+			",":  -> @emitNodeAndReparent @fragment
+			"+":  -> @emitNodeAndReparent @cursor.parentNode ? @fragment
 			eof:  -> @emitText()
 		no_eof =
-			eof: -> @emitError()
+			eof: -> @emitError("Unexpected end of input")
 
 		#define accum(s,k) { def: (c) -> k += c; s }
 		o = (a...) -> $.extend a...
 		constructor: ->
 			super [
-				enter:     ->
+				enter:   ->
 						@tag = @id = @cls = @attr = @val = @text = ""
 						@attrs = {}
 						1
 				o accum(1, @tag), common
 				o accum(2, @id), common
 				o accum(3, @cls), common,
-					enter:   -> @cls += (@cls.length and " " or ""); 3
-					".":     -> @cls += " "; 3
+					enter: -> @cls += (@cls.length and " " or ""); 3
+					".":   -> @cls += " "; 3
 				o accum(4, @attr), no_eof,
-					"=":     -> 5
-					"]":     -> @attrs[@attr] = @val; @attr = @val = ""; 1
+					"=":   -> 5
+					"]":   -> @attrs[@attr] = @val; @attr = @val = ""; 1
 				o accum(5, @val), no_eof,
-					"]":     -> @attrs[@attr] = @val; @attr = @val = ""; 1
+					"]":   -> @attrs[@attr] = @val; @attr = @val = ""; 1
 				o accum(6, @text), no_eof,
-					'\\':    -> 8 # skip one escaped char
-					'"':     -> @emitText()
+					'\\':  -> 8
+					'"':   -> @emitText()
 				o accum(7, @text), no_eof,
-					'\\':    -> 9 # skip one escaped char
-					"'":     -> @emitText()
-				{ def: (c) -> 6 }
-				{ def: (c) -> 7 }
+					'\\':  -> 9
+					"'":   -> @emitText()
+				o accum(6, @text), no_eof
+				o accum(7, @text), no_eof
 			]
 			@reset()
 		reset: ->
 			@fragment = @cursor = document.createDocumentFragment()
 			@tag = @id = @cls = @attr = @val = @text = ""
 			@attrs = {}
-		emitError: -> throw new Error "Failed to parse synth expression: #{@input}"
+		emitError: (msg) -> throw new Error "#{msg}: #{@input}"
 		emitNodeAndReparent: (nextCursor) ->
 			if @tag
 				@cursor.appendChild node = $.extend document.createElement(@tag),
 					id: @id or undefined
 					className: @cls or undefined
 				node.setAttribute(k, v) for k,v of @attrs
-				@cursor = nextCursor or node
+			@cursor = node and (nextCursor or node) or (nextCursor or @cursor)
 			0
 		htmlType = $.type.lookup("<html>")
 		emitText: ->
@@ -72,19 +72,12 @@ $.plugin
 
 
 	machine = new SynthMachine()
-	compiled = new SynthMachine().compile()
 	return {
 		$:
-			synth: $.extend((expr) ->
+			synth: (expr) ->
 				# .synth(expr) - create DOM nodes to match a simple css expression
 				machine.reset()
 				machine.run(expr)
 				$ if machine.fragment.childNodes.length is 1 then machine.fragment.childNodes[0]
 				else machine.fragment
-			, compiled: (expr) ->
-				compiled.reset()
-				compiled.run(expr)
-				$ if compiled.fragment.childNodes.length is 1 then compiled.fragment.childNodes[0]
-				else compiled.fragment
-			)
 	}

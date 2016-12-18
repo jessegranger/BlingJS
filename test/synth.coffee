@@ -6,21 +6,25 @@ testCases =
 	"div  div": "<div><div/></div>"
 	"div.foo": '<div class="foo"/>'
 	"div.foo.bar": '<div class="foo bar"/>'
+	"div#foo": '<div id="foo"/>'
+	"div#foo.bar": '<div id="foo" class="bar"/>'
+	"div.bar#foo": '<div id="foo" class="bar"/>'
+	"div[data-foo=bar]": '<div data-foo="bar"/>'
+	"div[data-foo=bar].baz": '<div class="baz" data-foo="bar"/>'
+	"div[data-foo=bar]#baz": '<div id="baz" data-foo="bar"/>'
+	"div[data-foo=bar][baz=zap]": '<div data-foo="bar" baz="zap"/>'
+	"div, div": '<div/><div/>'
+	"div, span": '<div/><span/>'
+	"div + span": '<div/><span/>'
+	"div, br, p div + span": "<div/><br/><p><div/><span/></p>"
+	"p div + span, br, div": "<p><div/><span/></p><br/><div/>"
+	"p 'text'": "<p>text</p>"
 
-runAllTestCases = ->
-	for k, v of testCases
-		s = $.synth.compiled(k).map($.toString).join(', ')
-		assert.equal s, v, "Pattern: #{k} should produce #{v}, got: #{s}"
 describe ".synth", ->
 	it "exists", ->
 		assert.equal (typeof $.synth), 'function'
-	it "converts CSS to DOM fragments", ->
-		assert.deepEqual $.synth('div').select('nodeName'), [ 'DIV' ]
-	it "works the same when using the compiled version", ->
-		assert.deepEqual $.synth.compiled('div').select('nodeName'), [ 'DIV' ]
-	it "supports", runAllTestCases
-	describe "when compiled", ->
-		it "supports", runAllTestCases
-
-
+	it "passes many test cases", ->
+		for k, v of testCases
+			s = $.synth(k).map($.toString).join(', ')
+			assert.equal s, v, "#{k} should produce #{v}, not #{s}"
 

@@ -28,11 +28,4 @@ describe ".StateMachine", ->
 				assert new EmptyMachine().run("").eof
 			it "triggers an enter rule in state 0", ->
 				assert new EmptyMachine().run("").enter
-			it "triggers an eof rule in state 0 (when compiled)", ->
-				assert new EmptyMachine().compile().run("").eof
-			it "triggers an enter rule in state 0 (when compiled)", ->
-				assert new EmptyMachine().compile().run("").enter
-		describe ".compile()", ->
-			it "works inline", ->
-				assert.equal new Capper().compile().run('foo').output, "<<FOO>>"
 
