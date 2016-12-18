@@ -1938,6 +1938,7 @@ $.plugin
 		$gt:    (p, o, t) -> o > p.$gt
 		$lte:   (p, o, t) -> o <= p.$lte
 		$gte:   (p, o, t) -> o >= p.$gte
+		$ne:    (p, o, t) -> o != p.$ne
 	}
 	matches = (pattern, obj, pt = $.type.lookup pattern) ->
 		if pt.name is 'object'
@@ -2528,11 +2529,11 @@ $.plugin
 	sortBy: (sorter) ->
 		a = $()
 		for item in @
-			n = $.sortedIndex a, item, sorter
-			a.splice n, 0, item
+			a.sortedInsert(item, sorter)
 		a
 	sortedInsert: (item, sorter) ->
-		@splice ($.sortedIndex @, item, sorter), 0, item
+		if @length is 0 then @push item
+		else @splice ($.sortedIndex @, item, sorter), 0, item
 		@
 	groupBy: (sorter) ->
 		groups = {}
@@ -2554,33 +2555,46 @@ $.plugin
 			f = f.call c, arg
 		if $.is 'number', f
 			c.state = f	
+	keyEscapes =
+		"\n": "n"
+		"\r": "r"
+		"\t": "t"
+		"\\": "\\"
+		"'": "'"
+		'"': '"'
+	escapeAsKey = (c) ->
+		c of keyEscapes \
+			and "\\" + keyEscapes[c] \
+			or c
 	
 	log = $.logger "[StateMachine]"
 	$: StateMachine: class StateMachine 
-		constructor: (@table) ->
-			state = null
-			$.defineProperty @, "state",
-				set: (m) ->
-					if m isnt state and m of @table
-						_callAll @table[state = m].enter, @
-					else if m is null
-						state = null
-					state
-				get: -> state
-		goto: go = (m, reset=false) -> ->
-			if reset 
-				@state = null
-			@state = m
-		@goto: go
-		tick: (c) ->
-			row = @table[@state]
-			return null unless row?
-			_callAll (row[c] ? row.def), @, c
-		run: (inputs) ->
-			@state = 0
-			@tick(c) for c in inputs
-			_callAll @table[@state].eof, @
-			@
+		constructor: (table, debug=false) ->
+			parse = null
+			trace = debug and "$.log('state:',s,'i:',i,'c:',c);" or ""
+			extractCode = (f, priorText='') -> f?.toString().replace(/function [^{]+ {\s*/,priorText).replace('return ', 's = ').replace(/\s*}$/,'').replace(/;*\n\s*/g,';') ? ''
+			ret = "s=s|0;for(i=i|0;i<=d.length;i++){c=d[i]||'eof';#{trace}switch(s){"
+			for state,rules of table 
+				if 'enter' of rules 
+					priorText = 'p=s;'
+					onEnter = "if(s!==p){#{extractCode(rules.enter, priorText)} if(s!==p){i--;break;}}"
+				else
+					onEnter = ""
+				hasRules = Object.keys(rules).length > (if 'enter' of rules then 1 else 0)
+				ret += unless hasRules
+					"case #{state}:#{onEnter}break;\n"
+				else
+					"case #{state}:#{onEnter}switch(c){"
+				for _c,_code of rules
+					continue if _c is 'enter' 
+					_code = extractCode(_code, priorText).replace(/\r|\n/g,'') + " break;"
+					ret += switch _c
+						when 'def' then "default:#{_code}"
+						else            "case '#{escapeAsKey _c}':#{_code}"
+				ret += hasRules \
+					and "}break;" or ""
+			ret += "}}return this;"
+			@run = (new Function "d", "s", "i", "p", "c", ret)
 $.plugin
 	provides: "string"
 	depends: "type"
@@ -2784,114 +2798,75 @@ $.plugin
 	class SynthMachine extends $.StateMachine
 		common = 
 			"#":  -> 2
-			".":  @goto 3, true
+			".":  -> 3
 			"[":  -> 4
 			'"':  -> 6
 			"'":  -> 7
-			" ":  -> 8
-			"\t": -> 8
-			"\n": -> 8
-			"\r": -> 8
-			",":  -> 10
-			"+":  -> 11
-			eof:  -> 13
-		@STATE_TABLE = [
-			{ 
-				enter: ->
-					@tag = @id = @cls = @attr = @val = @text = ""
-					@attrs = {}
-					1
-			},
-			$.extend({ 
-				def: (c) -> @tag += c; 1
-			}, common),
-			$.extend({ 
-				def: (c) -> @id += c; 2
-			}, common),
-			$.extend({ 
-				enter: -> @cls += " " if @cls.length > 0; 3
-				def: (c) -> @cls += c; 3
-			}, common),
-			{ 
-				"=": -> 5
-				"]": -> @attrs[@attr] = @val; @attr = @val = ""; 1
-				def: (c) -> @attr += c; 4
-				eof: -> 12
-			},
-			{ 
-				"]": -> @attrs[@attr] = @val; @attr = @val = ""; 1
-				def: (c) -> @val += c; 5
-				eof: -> 12
-			},
-			{ 
-				'"': -> 8
-				def: (c) -> @text += c; 6
-				eof: -> 12
-			},
-			{ 
-				"'": -> 8
-				def: (c) -> @text += c; 7
-				eof: -> 12
-			},
-			{ 
-				enter: ->
-					@emitNode()
-					@emitText()
-					0
-			},
-			{}, 
-			{ 
-				enter: ->
-					@emitNode()
-					@cursor = null
-					0
-			},
-			{ 
-				enter: ->
-					@emitNode()
-					@cursor = @cursor?.parentNode
-					0
-			},
-			{ 
-				enter: -> throw new Error "Error in synth expression: #{@input}"
-			},
-			{ 
-				enter: ->
-					@emitNode()
-					@emitText()
-					0
-			}
-		]
+			" ":  -> @emitText()
+			"\t": -> @emitText()
+			"\n": -> @emitText()
+			"\r": -> @emitText()
+			",":  -> @emitNodeAndReparent @fragment
+			"+":  -> @emitNodeAndReparent @cursor.parentNode ? @fragment
+			eof:  -> @emitText()
+		no_eof =
+			eof: -> @emitError("Unexpected end of input")
+		
+		o = (a...) -> $.extend a...
 		constructor: ->
-			super(SynthMachine.STATE_TABLE)
+			super [
+				enter:   ->
+						@tag = @id = @cls = @attr = @val = @text = ""
+						@attrs = {}
+						1
+				o { def: (c) ->  @tag += c; 1 }, common
+				o { def: (c) ->  @id += c; 2 }, common
+				o { def: (c) ->  @cls += c; 3 }, common,
+					enter: -> @cls += (@cls.length and " " or ""); 3
+					".":   -> @cls += " "; 3
+				o { def: (c) ->  @attr += c; 4 }, no_eof,
+					"=":   -> 5
+					"]":   -> @attrs[@attr] = @val; @attr = @val = ""; 1
+				o { def: (c) ->  @val += c; 5 }, no_eof,
+					"]":   -> @attrs[@attr] = @val; @attr = @val = ""; 1
+				o { def: (c) ->  @text += c; 6 }, no_eof,
+					'\\':  -> 8
+					'"':   -> @emitText()
+				o { def: (c) ->  @text += c; 7 }, no_eof,
+					'\\':  -> 9
+					"'":   -> @emitText()
+				o { def: (c) ->  @text += c; 6 }, no_eof
+				o { def: (c) ->  @text += c; 7 }, no_eof
+			]
 			@reset()
 		reset: ->
 			@fragment = @cursor = document.createDocumentFragment()
 			@tag = @id = @cls = @attr = @val = @text = ""
 			@attrs = {}
-		emitNode: ->
+		emitError: (msg) -> throw new Error "#{msg}: #{@input}"
+		emitNodeAndReparent: (nextCursor) ->
 			if @tag
-				node = document.createElement @tag
-				if @id then node.id = @id
-				if @cls then node.className = @cls
-				for k of @attrs
-					node.setAttribute k, @attrs[k]
-				@cursor.appendChild node
-				@cursor = node
+				@cursor.appendChild node = $.extend document.createElement(@tag),
+					id: @id or undefined
+					className: @cls or undefined
+				node.setAttribute(k, v) for k,v of @attrs
+			@cursor = node and (nextCursor or node) or (nextCursor or @cursor)
+			0
+		htmlType = $.type.lookup("<html>")
 		emitText: ->
-			if @text?.length > 0
-				@cursor.appendChild $.type.lookup("<html>").node(@text)
-				@text = ""
+			@emitNodeAndReparent()
+			@text?.length \
+				and @cursor.appendChild htmlType.node(@text) \
+				or @text = ""
+			0
 	machine = new SynthMachine()
 	return {
 		$:
 			synth: (expr) ->
 				machine.reset()
 				machine.run(expr)
-				if machine.fragment.childNodes.length == 1
-					$(machine.fragment.childNodes[0])
-				else
-					$(machine.fragment)
+				$ if machine.fragment.childNodes.length is 1 then machine.fragment.childNodes[0]
+				else machine.fragment
 	}
 $.plugin
 	depends: "StateMachine, function"

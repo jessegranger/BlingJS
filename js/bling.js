@@ -4014,6 +4014,9 @@
       },
       $gte: function(p, o, t) {
         return o >= p.$gte;
+      },
+      $ne: function(p, o, t) {
+        return o !== p.$ne;
       }
     };
     matches = function(pattern, obj, pt) {
@@ -5381,18 +5384,21 @@
         }
       },
       sortBy: function(sorter) {
-        var a, i1, item, len1, n, ref;
+        var a, i1, item, len1, ref;
         a = $();
         ref = this;
         for (i1 = 0, len1 = ref.length; i1 < len1; i1++) {
           item = ref[i1];
-          n = $.sortedIndex(a, item, sorter);
-          a.splice(n, 0, item);
+          a.sortedInsert(item, sorter);
         }
         return a;
       },
       sortedInsert: function(item, sorter) {
-        this.splice($.sortedIndex(this, item, sorter), 0, item);
+        if (this.length === 0) {
+          this.push(item);
+        } else {
+          this.splice($.sortedIndex(this, item, sorter), 0, item);
+        }
         return this;
       },
       groupBy: function(sorter) {
@@ -5439,7 +5445,7 @@
     provides: "StateMachine",
     depends: "type, logger"
   }, function() {
-    var StateMachine, _callAll, log;
+    var StateMachine, _callAll, escapeAsKey, keyEscapes, log;
     _callAll = function(f, c, arg) {
       while ((typeof f) === "function") {
         f = f.call(c, arg);
@@ -5448,64 +5454,66 @@
         return c.state = f;
       }
     };
+    keyEscapes = {
+      "\n": "n",
+      "\r": "r",
+      "\t": "t",
+      "\\": "\\",
+      "'": "'",
+      '"': '"'
+    };
+    escapeAsKey = function(c) {
+      return c in keyEscapes && "\\" + keyEscapes[c] || c;
+    };
     log = $.logger("[StateMachine]");
     return {
       $: {
         StateMachine: StateMachine = (function() {
-          var go;
-
-          function StateMachine(table1) {
-            var state;
-            this.table = table1;
-            state = null;
-            $.defineProperty(this, "state", {
-              set: function(m) {
-                if (m !== state && m in this.table) {
-                  _callAll(this.table[state = m].enter, this);
-                } else if (m === null) {
-                  state = null;
-                }
-                return state;
-              },
-              get: function() {
-                return state;
-              }
-            });
-          }
-
-          StateMachine.prototype.goto = go = function(m, reset) {
-            if (reset == null) {
-              reset = false;
+          function StateMachine(table, debug) {
+            var _c, _code, extractCode, hasRules, onEnter, parse, priorText, ret, rules, state, trace;
+            if (debug == null) {
+              debug = false;
             }
-            return function() {
-              if (reset) {
-                this.state = null;
+            parse = null;
+            trace = debug && "$.log('state:',s,'i:',i,'c:',c);" || "";
+            extractCode = function(f, priorText) {
+              var ref;
+              if (priorText == null) {
+                priorText = '';
               }
-              return this.state = m;
+              return (ref = f != null ? f.toString().replace(/function [^{]+ {\s*/, priorText).replace('return ', 's = ').replace(/\s*}$/, '').replace(/;*\n\s*/g, ';') : void 0) != null ? ref : '';
             };
-          };
-
-          StateMachine.goto = go;
-
-          StateMachine.prototype.tick = function(c) {
-            var ref, row;
-            row = this.table[this.state];
-            if (row == null) {
-              return null;
+            ret = "s=s|0;for(i=i|0;i<=d.length;i++){c=d[i]||'eof';" + trace + "switch(s){";
+            for (state in table) {
+              rules = table[state];
+              if ('enter' in rules) {
+                priorText = 'p=s;';
+                onEnter = "if(s!==p){" + (extractCode(rules.enter, priorText)) + " if(s!==p){i--;break;}}";
+              } else {
+                onEnter = "";
+              }
+              hasRules = Object.keys(rules).length > ('enter' in rules ? 1 : 0);
+              ret += !hasRules ? "case " + state + ":" + onEnter + "break;\n" : "case " + state + ":" + onEnter + "switch(c){";
+              for (_c in rules) {
+                _code = rules[_c];
+                if (_c === 'enter') {
+                  continue;
+                }
+                _code = extractCode(_code, priorText).replace(/\r|\n/g, '') + " break;";
+                ret += (function() {
+                  switch (_c) {
+                    case 'def':
+                      return "default:" + _code;
+                    default:
+                      return "case '" + (escapeAsKey(_c)) + "':" + _code;
+                  }
+                })();
+              }
+              ret += hasRules && "}break;" || "";
             }
-            return _callAll((ref = row[c]) != null ? ref : row.def, this, c);
-          };
-
-          StateMachine.prototype.run = function(inputs) {
-            var c, i1, len1;
-            this.state = 0;
-            for (i1 = 0, len1 = inputs.length; i1 < len1; i1++) {
-              c = inputs[i1];
-              this.tick(c);
-            }
-            _callAll(this.table[this.state].eof, this);
-            return this;
-          };
+            ret += "}}return this;";
+            this.run = new Function("d", "s", "i", "p", "c", ret);
+          }
 
           return StateMachine;
 
@@ -5984,7 +5992,7 @@
   }, function() {
     var SynthMachine, machine;
     SynthMachine = (function(superClass) {
-      var common;
+      var common, htmlType, no_eof, o;
 
       extend1(SynthMachine, superClass);
 
@@ -5992,7 +6000,9 @@
         "#": function() {
           return 2;
         },
-        ".": SynthMachine.goto(3, true),
+        ".": function() {
+          return 3;
+        },
         "[": function() {
           return 4;
         },
@@ -6003,141 +6013,134 @@
           return 7;
         },
         " ": function() {
-          return 8;
+          return this.emitText();
         },
         "\t": function() {
-          return 8;
+          return this.emitText();
         },
         "\n": function() {
-          return 8;
+          return this.emitText();
         },
         "\r": function() {
-          return 8;
+          return this.emitText();
         },
         ",": function() {
-          return 10;
+          return this.emitNodeAndReparent(this.fragment);
         },
         "+": function() {
-          return 11;
+          var ref;
+          return this.emitNodeAndReparent((ref = this.cursor.parentNode) != null ? ref : this.fragment);
         },
         eof: function() {
-          return 13;
+          return this.emitText();
         }
       };
 
-      SynthMachine.STATE_TABLE = [
-        {
-          enter: function() {
-            this.tag = this.id = this.cls = this.attr = this.val = this.text = "";
-            this.attrs = {};
-            return 1;
-          }
-        }, $.extend({
-          def: function(c) {
-            this.tag += c;
-            return 1;
-          }
-        }, common), $.extend({
-          def: function(c) {
-            this.id += c;
-            return 2;
-          }
-        }, common), $.extend({
-          enter: function() {
-            if (this.cls.length > 0) {
-              this.cls += " ";
-            }
-            return 3;
-          },
-          def: function(c) {
-            this.cls += c;
-            return 3;
-          }
-        }, common), {
-          "=": function() {
-            return 5;
-          },
-          "]": function() {
-            this.attrs[this.attr] = this.val;
-            this.attr = this.val = "";
-            return 1;
-          },
-          def: function(c) {
-            this.attr += c;
-            return 4;
-          },
-          eof: function() {
-            return 12;
-          }
-        }, {
-          "]": function() {
-            this.attrs[this.attr] = this.val;
-            this.attr = this.val = "";
-            return 1;
-          },
-          def: function(c) {
-            this.val += c;
-            return 5;
-          },
-          eof: function() {
-            return 12;
-          }
-        }, {
-          '"': function() {
-            return 8;
-          },
-          def: function(c) {
-            this.text += c;
-            return 6;
-          },
-          eof: function() {
-            return 12;
-          }
-        }, {
-          "'": function() {
-            return 8;
-          },
-          def: function(c) {
-            this.text += c;
-            return 7;
-          },
-          eof: function() {
-            return 12;
-          }
-        }, {
-          enter: function() {
-            this.emitNode();
-            this.emitText();
-            return 0;
-          }
-        }, {}, {
-          enter: function() {
-            this.emitNode();
-            this.cursor = null;
-            return 0;
-          }
-        }, {
-          enter: function() {
-            var ref;
-            this.emitNode();
-            this.cursor = (ref = this.cursor) != null ? ref.parentNode : void 0;
-            return 0;
-          }
-        }, {
-          enter: function() {
-            throw new Error("Error in synth expression: " + this.input);
-          }
-        }, {
-          enter: function() {
-            this.emitNode();
-            this.emitText();
-            return 0;
-          }
+      no_eof = {
+        eof: function() {
+          return this.emitError("Unexpected end of input");
         }
-      ];
+      };
+
+      o = function() {
+        var a;
+        a = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+        return $.extend.apply($, a);
+      };
 
       function SynthMachine() {
-        SynthMachine.__super__.constructor.call(this, SynthMachine.STATE_TABLE);
+        SynthMachine.__super__.constructor.call(this, [
+          {
+            enter: function() {
+              this.tag = this.id = this.cls = this.attr = this.val = this.text = "";
+              this.attrs = {};
+              return 1;
+            }
+          }, o({
+            def: function(c) {
+              this.tag += c;
+              return 1;
+            }
+          }, common), o({
+            def: function(c) {
+              this.id += c;
+              return 2;
+            }
+          }, common), o({
+            def: function(c) {
+              this.cls += c;
+              return 3;
+            }
+          }, common, {
+            enter: function() {
+              this.cls += this.cls.length && " " || "";
+              return 3;
+            },
+            ".": function() {
+              this.cls += " ";
+              return 3;
+            }
+          }), o({
+            def: function(c) {
+              this.attr += c;
+              return 4;
+            }
+          }, no_eof, {
+            "=": function() {
+              return 5;
+            },
+            "]": function() {
+              this.attrs[this.attr] = this.val;
+              this.attr = this.val = "";
+              return 1;
+            }
+          }), o({
+            def: function(c) {
+              this.val += c;
+              return 5;
+            }
+          }, no_eof, {
+            "]": function() {
+              this.attrs[this.attr] = this.val;
+              this.attr = this.val = "";
+              return 1;
+            }
+          }), o({
+            def: function(c) {
+              this.text += c;
+              return 6;
+            }
+          }, no_eof, {
+            '\\': function() {
+              return 8;
+            },
+            '"': function() {
+              return this.emitText();
+            }
+          }), o({
+            def: function(c) {
+              this.text += c;
+              return 7;
+            }
+          }, no_eof, {
+            '\\': function() {
+              return 9;
+            },
+            "'": function() {
+              return this.emitText();
+            }
+          }), o({
+            def: function(c) {
+              this.text += c;
+              return 6;
+            }
+          }, no_eof), o({
+            def: function(c) {
+              this.text += c;
+              return 7;
+            }
+          }, no_eof)
+        ]);
         this.reset();
       }
 
@@ -6147,30 +6150,34 @@
         return this.attrs = {};
       };
 
-      SynthMachine.prototype.emitNode = function() {
-        var k, node;
-        if (this.tag) {
-          node = document.createElement(this.tag);
-          if (this.id) {
-            node.id = this.id;
-          }
-          if (this.cls) {
-            node.className = this.cls;
-          }
-          for (k in this.attrs) {
-            node.setAttribute(k, this.attrs[k]);
-          }
-          this.cursor.appendChild(node);
-          return this.cursor = node;
-        }
+      SynthMachine.prototype.emitError = function(msg) {
+        throw new Error(msg + ": " + this.input);
       };
+
+      SynthMachine.prototype.emitNodeAndReparent = function(nextCursor) {
+        var k, node, ref, v;
+        if (this.tag) {
+          this.cursor.appendChild(node = $.extend(document.createElement(this.tag), {
+            id: this.id || void 0,
+            className: this.cls || void 0
+          }));
+          ref = this.attrs;
+          for (k in ref) {
+            v = ref[k];
+            node.setAttribute(k, v);
+          }
+        }
+        this.cursor = node && (nextCursor || node) || (nextCursor || this.cursor);
+        return 0;
+      };
+
+      htmlType = $.type.lookup("<html>");
 
       SynthMachine.prototype.emitText = function() {
         var ref;
-        if (((ref = this.text) != null ? ref.length : void 0) > 0) {
-          this.cursor.appendChild($.type.lookup("<html>").node(this.text));
-          return this.text = "";
-        }
+        this.emitNodeAndReparent();
+        ((ref = this.text) != null ? ref.length : void 0) && this.cursor.appendChild(htmlType.node(this.text) || (this.text = ""));
+        return 0;
       };
 
       return SynthMachine;
@@ -6182,11 +6189,7 @@
         synth: function(expr) {
           machine.reset();
           machine.run(expr);
-          if (machine.fragment.childNodes.length === 1) {
-            return $(machine.fragment.childNodes[0]);
-          } else {
-            return $(machine.fragment);
-          }
+          return $(machine.fragment.childNodes.length === 1 ? machine.fragment.childNodes[0] : machine.fragment);
         }
       }
     };
