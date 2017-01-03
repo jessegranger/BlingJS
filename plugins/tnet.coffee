@@ -6,6 +6,8 @@ $.plugin
 	# Intended to be very simple to parse and extensible.
 	# This implementation supports many more types than the original;
 	# including the ability to register custom classes at runtime.
+	#
+	#define CLEAR(array) (array.splice(0, array.length))
 	Types =
 		"number":
 			symbol: "#"
@@ -155,7 +157,6 @@ $.plugin
 						]
 		return [ undefined, data ]
 
-	#define CLEAR(array) (array.splice(0, array.length))
 	packingStack = [] # a stack of the current packing objects
 	packOne = (x, forceType) ->
 		tx = forceType ? $.type x
