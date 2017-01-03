@@ -6585,7 +6585,7 @@
           if (i <= classes.length) {
             obj.__proto__ = classes[i - 1].prototype;
           } else {
-            CLEAR(unpackingStack);
+            unpackingStack.splice(0, unpackingStack.length);
             throw new Error("TNET: attempt to unpack unregistered class index: " + i);
           }
           return obj;

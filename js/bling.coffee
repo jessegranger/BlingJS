@@ -2996,6 +2996,8 @@ $.plugin
 	provides: 'TNET'
 	depends: "type, string, function"
 , -> 
+	#
+	
 	Types =
 		"number":
 			symbol: "#"
@@ -3110,7 +3112,7 @@ $.plugin
 				if i <= classes.length
 					obj.__proto__ = classes[i - 1].prototype
 				else
-					CLEAR(unpackingStack)
+					(unpackingStack.splice(0, unpackingStack.length))
 					throw new Error("TNET: attempt to unpack unregistered class index: #{i}")
 				obj
 		"circular reference":
@@ -3140,7 +3142,6 @@ $.plugin
 							data[x+1...]
 						]
 		return [ undefined, data ]
-	
 	packingStack = [] 
 	packOne = (x, forceType) ->
 		tx = forceType ? $.type x
