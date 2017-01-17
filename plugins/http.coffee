@@ -20,6 +20,7 @@ $.plugin
 			# __$.http(url, [opts/callback])__ - fetch _url_ using HTTP (method in _opts_)
 			http: (url, opts = {}) ->
 				xhr = new XMLHttpRequest()
+				result = $.Promise()
 				if $.is "function", opts
 					opts = success: $.bound(xhr, opts)
 				opts = $.extend {
@@ -37,8 +38,14 @@ $.plugin
 				}, opts
 				# Bind all the event handlers.
 				opts.state = $.bound(xhr, opts.state)
-				opts.success = $.bound(xhr, opts.success)
-				opts.error = $.bound(xhr, opts.error)
+				_success = $.bound(xhr, opts.success)
+				_error = $.bound(xhr, opts.error)
+				opts.success = (text) ->
+					result.resolve(text)
+					_success(text)
+				opts.error = (err) ->
+					result.reject(err)
+					_error(err)
 				# Append url parameters.
 				if opts.data and opts.method is "GET"
 					url += "?" + formencode(opts.data)
@@ -65,8 +72,8 @@ $.plugin
 					xhr.setRequestHeader k, v
 				# Send the request body.
 				xhr.send opts.data
-				# Return the wrapped xhr object (for cancelling mostly)
-				return $(xhr)
+				# Return a Promise.
+				return $.extend result, cancel: -> xhr.cancel()
 
 			# __$.post(_url_, [_opts_])__ - fetch _url_ with a POST request
 			post: (url, opts = {}) ->
