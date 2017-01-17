@@ -1,4 +1,3 @@
-Rework plugins/http to return Promises
 in 'make site' have less pre-compile CSS, instead of using less.js on the page
 
 add $.Progress(N).timeout(ms)
