@@ -1645,6 +1645,7 @@ $.plugin
 		$:
 			http: (url, opts = {}) ->
 				xhr = new XMLHttpRequest()
+				result = $.Promise()
 				if $.is "function", opts
 					opts = success: $.bound(xhr, opts)
 				opts = $.extend {
@@ -1661,8 +1662,14 @@ $.plugin
 					headers: {}
 				}, opts
 				opts.state = $.bound(xhr, opts.state)
-				opts.success = $.bound(xhr, opts.success)
-				opts.error = $.bound(xhr, opts.error)
+				_success = $.bound(xhr, opts.success)
+				_error = $.bound(xhr, opts.error)
+				opts.success = (text) ->
+					result.resolve(text)
+					_success(text)
+				opts.error = (err) ->
+					result.reject(err)
+					_error(err)
 				if opts.data and opts.method is "GET"
 					url += "?" + formencode(opts.data)
 				else if opts.data and opts.method is "POST"
@@ -1683,7 +1690,7 @@ $.plugin
 				for k,v of opts.headers
 					xhr.setRequestHeader k, v
 				xhr.send opts.data
-				return $(xhr)
+				return $.extend result, cancel: -> xhr.cancel()
 			post: (url, opts = {}) ->
 				if $.is("function",opts)
 					opts = success: opts

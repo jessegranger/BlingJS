@@ -3517,11 +3517,12 @@
     return {
       $: {
         http: function(url, opts) {
-          var k, ref, v, xhr;
+          var _error, _success, k, ref, result, v, xhr;
           if (opts == null) {
             opts = {};
           }
           xhr = new XMLHttpRequest();
+          result = $.Promise();
           if ($.is("function", opts)) {
             opts = {
               success: $.bound(xhr, opts)
@@ -3541,8 +3542,16 @@
             headers: {}
           }, opts);
           opts.state = $.bound(xhr, opts.state);
-          opts.success = $.bound(xhr, opts.success);
-          opts.error = $.bound(xhr, opts.error);
+          _success = $.bound(xhr, opts.success);
+          _error = $.bound(xhr, opts.error);
+          opts.success = function(text) {
+            result.resolve(text);
+            return _success(text);
+          };
+          opts.error = function(err) {
+            result.reject(err);
+            return _error(err);
+          };
           if (opts.data && opts.method === "GET") {
             url += "?" + formencode(opts.data);
           } else if (opts.data && opts.method === "POST") {
@@ -3573,7 +3582,11 @@
             xhr.setRequestHeader(k, v);
           }
           xhr.send(opts.data);
-          return $(xhr);
+          return $.extend(result, {
+            cancel: function() {
+              return xhr.cancel();
+            }
+          });
         },
         post: function(url, opts) {
           if (opts == null) {
