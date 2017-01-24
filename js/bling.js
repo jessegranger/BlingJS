@@ -5494,7 +5494,7 @@
               if (priorText == null) {
                 priorText = '';
               }
-              return (ref = f != null ? f.toString().replace(/function [^{]+ {\s*/, priorText).replace('return ', 's = ').replace(/\s*}$/, '').replace(/;*\n\s*/g, ';') : void 0) != null ? ref : '';
+              return (ref = f != null ? f.toString().replace(/function [^{]+ *{\s*/, priorText).replace('return ', 's = ').replace(/\s*}$/, '').replace(/;*\n\s*/g, ';') : void 0) != null ? ref : '';
             };
             ret = "s=s|0;for(i=i|0;i<=d.length;i++){c=d[i]||'eof';" + trace + "switch(s){";
             for (state in table) {
