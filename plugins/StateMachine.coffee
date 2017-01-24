@@ -32,7 +32,7 @@ $.plugin
 				if 'enter' of rules # enter is a special rule because it does not consume input
 					priorText = 'p=s;'
 					# it injects the onEnter code into the top of the case code
-					onEnter = "if(s!==p){#{extractCode(rules.enter, priorText)} if(s!==p){i--;break}}"
+					onEnter = "if(s!==p){#{extractCode(rules.enter, priorText)};if(s!==p){i--;break}}"
 				else
 					onEnter = ""
 
