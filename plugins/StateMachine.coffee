@@ -26,13 +26,21 @@ $.plugin
 		constructor: (table, debug=false) ->
 			parse = null
 			trace = debug and "$.log('state:',s,'i:',i,'c:',c);" or ""
-			extractCode = (f, priorText='') -> f?.toString().replace(/function [^{]+ {\s*/,priorText).replace('return ', 's = ').replace(/\s*}$/,'').replace(/;*\n\s*/g,';') ? ''
+			extractCode = (f, priorText='') -> f?.toString() \
+				.replace(/function [^{]+ {\s*/,priorText) \
+				.replace('return ', 's = ') \
+				.replace(/\s*}$/,'') \
+				.replace(/;*\n\s*/g,';') \
+				? ''
 			ret = "s=s|0;for(i=i|0;i<=d.length;i++){c=d[i]||'eof';#{trace}switch(s){"
 			for state,rules of table 
 				if 'enter' of rules # enter is a special rule because it does not consume input
 					priorText = 'p=s;'
 					# it injects the onEnter code into the top of the case code
-					onEnter = "if(s!==p){#{extractCode(rules.enter, priorText)};if(s!==p){i--;break}}"
+					onEnter = extractCode(rules.enter, priorText)
+					$.log "extractCode from", rules.enter, " OUTPUT: ", onEnter
+					# wrap it in a state-change detector
+					onEnter = "if(s!==p){#{onEnter};if(s!==p){i--;break}}"
 				else
 					onEnter = ""
 
