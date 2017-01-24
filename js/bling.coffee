@@ -2584,7 +2584,7 @@ $.plugin
 			for state,rules of table 
 				if 'enter' of rules 
 					priorText = 'p=s;'
-					onEnter = "if(s!==p){#{extractCode(rules.enter, priorText)} if(s!==p){i--;break}}"
+					onEnter = "if(s!==p){#{extractCode(rules.enter, priorText)};if(s!==p){i--;break}}"
 				else
 					onEnter = ""
 				hasRules = Object.keys(rules).length > (if 'enter' of rules then 1 else 0)

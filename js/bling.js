@@ -5501,7 +5501,7 @@
               rules = table[state];
               if ('enter' in rules) {
                 priorText = 'p=s;';
-                onEnter = "if(s!==p){" + (extractCode(rules.enter, priorText)) + " if(s!==p){i--;break}}";
+                onEnter = "if(s!==p){" + (extractCode(rules.enter, priorText)) + ";if(s!==p){i--;break}}";
               } else {
                 onEnter = "";
               }
