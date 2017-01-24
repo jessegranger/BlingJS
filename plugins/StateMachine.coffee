@@ -27,10 +27,10 @@ $.plugin
 			parse = null
 			trace = debug and "$.log('state:',s,'i:',i,'c:',c);" or ""
 			extractCode = (f, priorText='') -> f?.toString() \
-				.replace(/function [^{]+ {\s*/,priorText) \
+				.replace(/function [^{]+ *{\s*/,priorText) \
 				.replace('return ', 's = ') \
 				.replace(/\s*}$/,'') \
-				.replace(/;*\n\s*/g,';') \
+				.replace(/;*\r*\n*\s*/g,';') \
 				? ''
 			ret = "s=s|0;for(i=i|0;i<=d.length;i++){c=d[i]||'eof';#{trace}switch(s){"
 			for state,rules of table 
