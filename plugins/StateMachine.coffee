@@ -29,9 +29,10 @@ $.plugin
 			extractCode = (f, priorText='') -> f?.toString().replace(/function [^{]+ {\s*/,priorText).replace('return ', 's = ').replace(/\s*}$/,'').replace(/;*\n\s*/g,';') ? ''
 			ret = "s=s|0;for(i=i|0;i<=d.length;i++){c=d[i]||'eof';#{trace}switch(s){"
 			for state,rules of table 
-				if 'enter' of rules # enter is special because it does not consume input
+				if 'enter' of rules # enter is a special rule because it does not consume input
 					priorText = 'p=s;'
-					onEnter = "if(s!==p){#{extractCode(rules.enter, priorText)} if(s!==p){i--;break;}}"
+					# it injects the onEnter code into the top of the case code
+					onEnter = "if(s!==p){#{extractCode(rules.enter, priorText)} if(s!==p){i--;break}}"
 				else
 					onEnter = ""
 
@@ -52,4 +53,7 @@ $.plugin
 				ret += hasRules \
 					and "}break;" or ""
 			ret += "}}return this;"
-			@run = (new Function "d", "s", "i", "p", "c", ret)
+			try @run = (new Function "d", "s", "i", "p", "c", ret)
+			catch err
+				$.log "Failed to parse compiled machine: ", ret
+				throw err
