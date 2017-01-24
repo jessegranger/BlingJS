@@ -46,7 +46,7 @@ $.plugin
 				for _c,_code of rules
 					continue if _c is 'enter' # already handled
 					# extract the code from the state handler
-					_code = extractCode(_code, priorText).replace(/\r|\n/g,'') + " break;"
+					_code = extractCode(_code, priorText).replace(/\r|\n/g,'') + ";break;"
 					ret += switch _c
 						when 'def' then "default:#{_code}"
 						else            "case '#{escapeAsKey _c}':#{_code}"
