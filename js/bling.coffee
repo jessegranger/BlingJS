@@ -2579,12 +2579,14 @@ $.plugin
 		constructor: (table, debug=false) ->
 			parse = null
 			trace = debug and "$.log('state:',s,'i:',i,'c:',c);" or ""
-			extractCode = (f, priorText='') -> f?.toString() \
-				.replace(/function [^{]+ *{\s*/,priorText) \
-				.replace('return ', 's = ') \
-				.replace(/\s*}$/,'') \
-				.replace(/;*\n\s*/g,';') \
-				? ''
+			extractCode = (f, priorText='') -> 
+				code = f?.toString()
+					.replace(/function [^{]+ *{\s*/,priorText)
+					.replace(/return ([^;]),(\d+)/, '$1;s=$2') 
+					.replace('return ', 's = ')
+					.replace(/\s*}$/,'')
+					.replace(/;*\n\s*/g,';')
+				code ? ""
 			ret = "s=s|0;for(i=i|0;i<=d.length;i++){c=d[i]||'eof';#{trace}switch(s){"
 			for state,rules of table 
 				if 'enter' of rules 
