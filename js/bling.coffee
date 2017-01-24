@@ -2584,7 +2584,7 @@ $.plugin
 			for state,rules of table 
 				if 'enter' of rules 
 					priorText = 'p=s;'
-					onEnter = "if(s!==p){#{extractCode(rules.enter, priorText)} if(s!==p){i--;break;}}"
+					onEnter = "if(s!==p){#{extractCode(rules.enter, priorText)} if(s!==p){i--;break}}"
 				else
 					onEnter = ""
 				hasRules = Object.keys(rules).length > (if 'enter' of rules then 1 else 0)
@@ -2601,7 +2601,10 @@ $.plugin
 				ret += hasRules \
 					and "}break;" or ""
 			ret += "}}return this;"
-			@run = (new Function "d", "s", "i", "p", "c", ret)
+			try @run = (new Function "d", "s", "i", "p", "c", ret)
+			catch err
+				$.log "Failed to parse compiled machine: ", ret
+				throw err
 $.plugin
 	provides: "string"
 	depends: "type"

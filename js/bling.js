@@ -5483,7 +5483,7 @@
       $: {
         StateMachine: StateMachine = (function() {
           function StateMachine(table, debug) {
-            var _c, _code, extractCode, hasRules, onEnter, parse, priorText, ret, rules, state, trace;
+            var _c, _code, err, extractCode, hasRules, onEnter, parse, priorText, ret, rules, state, trace;
             if (debug == null) {
               debug = false;
             }
@@ -5501,7 +5501,7 @@
               rules = table[state];
               if ('enter' in rules) {
                 priorText = 'p=s;';
-                onEnter = "if(s!==p){" + (extractCode(rules.enter, priorText)) + " if(s!==p){i--;break;}}";
+                onEnter = "if(s!==p){" + (extractCode(rules.enter, priorText)) + " if(s!==p){i--;break}}";
               } else {
                 onEnter = "";
               }
@@ -5525,7 +5525,13 @@
               ret += hasRules && "}break;" || "";
             }
             ret += "}}return this;";
-            this.run = new Function("d", "s", "i", "p", "c", ret);
+            try {
+              this.run = new Function("d", "s", "i", "p", "c", ret);
+            } catch (error1) {
+              err = error1;
+              $.log("Failed to parse compiled machine: ", ret);
+              throw err;
+            }
           }
 
           return StateMachine;
