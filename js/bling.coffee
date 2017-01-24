@@ -2579,12 +2579,19 @@ $.plugin
 		constructor: (table, debug=false) ->
 			parse = null
 			trace = debug and "$.log('state:',s,'i:',i,'c:',c);" or ""
-			extractCode = (f, priorText='') -> f?.toString().replace(/function [^{]+ {\s*/,priorText).replace('return ', 's = ').replace(/\s*}$/,'').replace(/;*\n\s*/g,';') ? ''
+			extractCode = (f, priorText='') -> f?.toString() \
+				.replace(/function [^{]+ {\s*/,priorText) \
+				.replace('return ', 's = ') \
+				.replace(/\s*}$/,'') \
+				.replace(/;*\n\s*/g,';') \
+				? ''
 			ret = "s=s|0;for(i=i|0;i<=d.length;i++){c=d[i]||'eof';#{trace}switch(s){"
 			for state,rules of table 
 				if 'enter' of rules 
 					priorText = 'p=s;'
-					onEnter = "if(s!==p){#{extractCode(rules.enter, priorText)};if(s!==p){i--;break}}"
+					onEnter = extractCode(rules.enter, priorText)
+					$.log "extractCode from", rules.enter, " OUTPUT: ", onEnter
+					onEnter = "if(s!==p){#{onEnter};if(s!==p){i--;break}}"
 				else
 					onEnter = ""
 				hasRules = Object.keys(rules).length > (if 'enter' of rules then 1 else 0)

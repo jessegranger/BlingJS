@@ -5501,7 +5501,9 @@
               rules = table[state];
               if ('enter' in rules) {
                 priorText = 'p=s;';
-                onEnter = "if(s!==p){" + (extractCode(rules.enter, priorText)) + ";if(s!==p){i--;break}}";
+                onEnter = extractCode(rules.enter, priorText);
+                $.log("extractCode from", rules.enter, " OUTPUT: ", onEnter);
+                onEnter = "if(s!==p){" + onEnter + ";if(s!==p){i--;break}}";
               } else {
                 onEnter = "";
               }
