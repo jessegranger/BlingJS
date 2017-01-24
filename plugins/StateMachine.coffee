@@ -29,7 +29,7 @@ $.plugin
 			extractCode = (f, priorText='') -> 
 				code = f?.toString()
 					.replace(/function [^{]+ *{\s*/,priorText)
-					.replace(/return ([^;]),(\d+)/, '$1;s=$2') # a common minifier construction
+					.replace(/return ([^;]+),(\d+)/, '$1;s=$2') # a common minifier construction
 					.replace('return ', 's = ')
 					.replace(/\s*}$/,'')
 					.replace(/;*\n\s*/g,';')
