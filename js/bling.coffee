@@ -2594,7 +2594,7 @@ $.plugin
 					"case #{state}:#{onEnter}switch(c){"
 				for _c,_code of rules
 					continue if _c is 'enter' 
-					_code = extractCode(_code, priorText).replace(/\r|\n/g,'') + " break;"
+					_code = extractCode(_code, priorText).replace(/\r|\n/g,'') + ";break;"
 					ret += switch _c
 						when 'def' then "default:#{_code}"
 						else            "case '#{escapeAsKey _c}':#{_code}"

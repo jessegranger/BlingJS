@@ -5512,7 +5512,7 @@
                 if (_c === 'enter') {
                   continue;
                 }
-                _code = extractCode(_code, priorText).replace(/\r|\n/g, '') + " break;";
+                _code = extractCode(_code, priorText).replace(/\r|\n/g, '') + ";break;";
                 ret += (function() {
                   switch (_c) {
                     case 'def':
