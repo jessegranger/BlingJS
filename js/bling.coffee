@@ -2582,7 +2582,7 @@ $.plugin
 			extractCode = (f, priorText='') -> 
 				code = f?.toString()
 					.replace(/function [^{]+ *{\s*/,priorText)
-					.replace(/return ([^;]),(\d+)/, '$1;s=$2') 
+					.replace(/return ([^;]+),(\d+)/, '$1;s=$2') 
 					.replace('return ', 's = ')
 					.replace(/\s*}$/,'')
 					.replace(/;*\n\s*/g,';')

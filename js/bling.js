@@ -5494,7 +5494,7 @@
               if (priorText == null) {
                 priorText = '';
               }
-              code = f != null ? f.toString().replace(/function [^{]+ *{\s*/, priorText).replace(/return ([^;]),(\d+)/, '$1;s=$2').replace('return ', 's = ').replace(/\s*}$/, '').replace(/;*\n\s*/g, ';') : void 0;
+              code = f != null ? f.toString().replace(/function [^{]+ *{\s*/, priorText).replace(/return ([^;]+),(\d+)/, '$1;s=$2').replace('return ', 's = ').replace(/\s*}$/, '').replace(/;*\n\s*/g, ';') : void 0;
               return code != null ? code : "";
             };
             ret = "s=s|0;for(i=i|0;i<=d.length;i++){c=d[i]||'eof';" + trace + "switch(s){";
