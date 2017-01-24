@@ -71,6 +71,13 @@ dist/bling.coffee: bling.coffee $(shell ls plugins/*.coffee | sort -f)
 	@mkdir -p dist
 	@cat $^ | $(GPP_FILTER) > $@
 
+dist/bling.min.js: dist/bling.js $(UGLIFY)
+		(cd dist && \
+			../$(UGLIFY) bling.js -c --source-map bling.min.js.map \
+				--in-source-map bling.js.map \
+				-m -r '$,Bling,window,document' \
+				--screw-ie8 -o bling.min.js)
+
 clean:
 	rm -rf dist/*
 
