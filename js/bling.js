@@ -6179,10 +6179,9 @@
       SynthMachine.prototype.emitNodeAndReparent = function(nextCursor) {
         var k, node, ref, v;
         if (this.tag) {
-          this.cursor.appendChild(node = $.extend(document.createElement(this.tag), {
-            id: this.id || void 0,
-            className: this.cls || void 0
-          }));
+          this.cursor.appendChild(node = $.extend(document.createElement(this.tag)));
+          this.id !== "" && (node.id = this.id);
+          this.cls !== "" && (node.className = this.cls);
           ref = this.attrs;
           for (k in ref) {
             v = ref[k];

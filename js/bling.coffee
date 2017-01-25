@@ -2865,9 +2865,9 @@ $.plugin
 		emitError: (msg) -> throw new Error "#{msg}: #{@input}"
 		emitNodeAndReparent: (nextCursor) ->
 			if @tag
-				@cursor.appendChild node = $.extend document.createElement(@tag),
-					id: @id or undefined
-					className: @cls or undefined
+				@cursor.appendChild node = $.extend document.createElement(@tag)
+				@id isnt "" and node.id = @id
+				@cls isnt "" and node.className = @cls
 				node.setAttribute(k, v) for k,v of @attrs
 			@cursor = node and (nextCursor or node) or (nextCursor or @cursor)
 			0
