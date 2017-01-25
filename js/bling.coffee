@@ -2832,7 +2832,8 @@ $.plugin
 			eof: -> @emitError("Unexpected end of input")
 		
 		o = (a...) -> $.extend a...
-		constructor: ->
+		constructor: (debug) ->
+			debug = true
 			super [
 				enter:   ->
 						@tag = @id = @cls = @attr = @val = @text = ""
@@ -2856,7 +2857,7 @@ $.plugin
 					"'":   -> @emitText()
 				o { def: (c) ->  @text += c; 6 }, no_eof
 				o { def: (c) ->  @text += c; 7 }, no_eof
-			]
+			], debug
 			@reset()
 		reset: ->
 			@fragment = @cursor = document.createDocumentFragment()
@@ -2866,8 +2867,8 @@ $.plugin
 		emitNodeAndReparent: (nextCursor) ->
 			if @tag
 				@cursor.appendChild node = $.extend document.createElement(@tag)
-				@id isnt "" and node.id = @id
-				@cls isnt "" and node.className = @cls
+				@id not in ["",null,undefined] and node.id = @id
+				@cls not in ["",null,undefined] and node.className = @cls
 				node.setAttribute(k, v) for k,v of @attrs
 			@cursor = node and (nextCursor or node) or (nextCursor or @cursor)
 			0

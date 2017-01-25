@@ -6070,7 +6070,8 @@
         return $.extend.apply($, a);
       };
 
-      function SynthMachine() {
+      function SynthMachine(debug) {
+        debug = true;
         SynthMachine.__super__.constructor.call(this, [
           {
             enter: function() {
@@ -6162,7 +6163,7 @@
               return 7;
             }
           }, no_eof)
-        ]);
+        ], debug);
         this.reset();
       }
 
@@ -6177,14 +6178,14 @@
       };
 
       SynthMachine.prototype.emitNodeAndReparent = function(nextCursor) {
-        var k, node, ref, v;
+        var k, node, ref, ref1, ref2, v;
         if (this.tag) {
           this.cursor.appendChild(node = $.extend(document.createElement(this.tag)));
-          this.id !== "" && (node.id = this.id);
-          this.cls !== "" && (node.className = this.cls);
-          ref = this.attrs;
-          for (k in ref) {
-            v = ref[k];
+          ((ref = this.id) !== "" && ref !== null && ref !== (void 0)) && (node.id = this.id);
+          ((ref1 = this.cls) !== "" && ref1 !== null && ref1 !== (void 0)) && (node.className = this.cls);
+          ref2 = this.attrs;
+          for (k in ref2) {
+            v = ref2[k];
             node.setAttribute(k, v);
           }
         }
