@@ -21,7 +21,8 @@ $.plugin
 
 		#define accum(s,k) { def: (c) -> k += c; s }
 		o = (a...) -> $.extend a...
-		constructor: ->
+		constructor: (debug) ->
+			debug = true
 			super [
 				enter:   ->
 						@tag = @id = @cls = @attr = @val = @text = ""
@@ -45,7 +46,7 @@ $.plugin
 					"'":   -> @emitText()
 				o accum(6, @text), no_eof
 				o accum(7, @text), no_eof
-			]
+			], debug
 			@reset()
 		reset: ->
 			@fragment = @cursor = document.createDocumentFragment()
@@ -55,8 +56,8 @@ $.plugin
 		emitNodeAndReparent: (nextCursor) ->
 			if @tag
 				@cursor.appendChild node = $.extend document.createElement(@tag)
-				@id isnt "" and node.id = @id
-				@cls isnt "" and node.className = @cls
+				@id not in ["",null,undefined] and node.id = @id
+				@cls not in ["",null,undefined] and node.className = @cls
 				node.setAttribute(k, v) for k,v of @attrs
 			@cursor = node and (nextCursor or node) or (nextCursor or @cursor)
 			0
