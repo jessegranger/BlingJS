@@ -2,8 +2,11 @@ $.plugin
 	provides: "synth"
 	depends: "StateMachine, type, dom"
 , ->
+
+	# A SynthMachine is a StateMachine that consumes CSS-like strings,
+	# and produces a DOM fragment to match the string.
 	class SynthMachine extends $.StateMachine
-		common = # a common template included in lots of the state machine rules
+		common = # common states used in many rules below
 			"#":  -> 2
 			".":  @goto 3, true
 			"[":  -> 4
@@ -91,6 +94,7 @@ $.plugin
 			@fragment = @cursor = document.createDocumentFragment()
 			@tag = @id = @cls = @attr = @val = @text = ""
 			@attrs = {}
+			@
 		emitNode: ->
 			if @tag
 				node = document.createElement @tag
@@ -100,21 +104,16 @@ $.plugin
 					node.setAttribute k, @attrs[k]
 				@cursor.appendChild node
 				@cursor = node
+
+		html_type = $.type.lookup("<html>") # for use later
 		emitText: ->
 			if @text?.length > 0
-				@cursor.appendChild $.type.lookup("<html>").node(@text)
+				# use the "<html>" routines for creating the text node
+				@cursor.appendChild html_type.node(@text)
 				@text = ""
 
-
 	machine = new SynthMachine()
-	return {
-		$:
-			synth: (expr) ->
-				# .synth(expr) - create DOM nodes to match a simple css expression
-				machine.reset()
-				machine.run(expr)
-				if machine.fragment.childNodes.length == 1
-					$(machine.fragment.childNodes[0])
-				else
-					$(machine.fragment)
-	}
+	return $: synth: (expr) ->
+		# .synth(expr) - create DOM nodes to match a simple css expression
+		f = machine.reset().run(expr, 0).fragment
+		return $(if f.childNodes.length is 1 then f.childNodes[0] else f)
