@@ -61,6 +61,7 @@ $.plugin
 		$gt:    (p, o, t) -> o > p.$gt
 		$lte:   (p, o, t) -> o <= p.$lte
 		$gte:   (p, o, t) -> o >= p.$gte
+		$ne:    (p, o, t) -> o != p.$ne
 	}
 
 	matches = (pattern, obj, pt = $.type.lookup pattern) ->

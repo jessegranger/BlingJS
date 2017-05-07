@@ -118,6 +118,7 @@ $.plugin
 		# as time goes on (so specialized type matches are preferred).
 		register "object",    is: (o) -> o? and (typeof o is "object") and (o.constructor?.name in [undefined, "Object"])
 		register "array",     is: Array.isArray or (o) -> isType Array, o
+		register "map",       is: (o) -> o and (o instanceof Map)
 		register "buffer",    is: $.global.Buffer.isBuffer or -> false # this way of referencing Buffer is so browserify does not include a Buffer shim just for this check
 		register "error",     is: (o) -> isType 'Error', o
 		register "regexp",    is: (o) -> isType 'RegExp', o

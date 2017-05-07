@@ -1,10 +1,17 @@
+SHELL=/bin/bash
 COFFEE=node_modules/.bin/coffee
 UGLIFY=node_modules/.bin/uglifyjs
 UGLIFY_OPTS?=--screw-ie8
 JLDOM=node_modules/jldom
+
 MOCHA=node_modules/.bin/mocha
 MOCHA_FMT?=dot
-MOCHA_OPTS=--compilers coffee:coffee-script/register --globals document,window,Bling,$$,_ -R ${MOCHA_FMT} -s 500 --bail
+MOCHA_OPTS=--compilers coffee:coffee-script/register \
+	--globals document,window,Bling,$$,_ \
+	-R ${MOCHA_FMT} \
+	-s 500 \
+	--bail
+
 GPP=gpp
 GPP_OPTS=-U '' '' '(' ',' ')' '(' ')' '\#' '' \
 	-M '\#' '\n' ' ' ' ' '\n' '(' ')' \
@@ -12,16 +19,15 @@ GPP_OPTS=-U '' '' '(' ',' ')' '(' ')' '\#' '' \
 	+c '\#\#\#' '\#\#\#' \
 	+s '"' '"' "\\" \
 	+s "'" "'" "\\" -n
+GPP_FILTER=sed -E 's/^	*\# .*$$//g' | grep -v '^ *$$' | $(GPP) $(GPP_OPTS)
 
-TEST_FILES=$(shell ls test/*.coffee | grep -v setup.coffee | sort -f )
-TIME_FILES=$(subst .coffee,.coffee.time,$(shell ls bench/*.coffee | grep -v setup.coffee | sort -f ))
 
 all: release
 
 release: dist/bling.js
 
-test: $(JLDOM) $(MOCHA) dist/bling.js $(TEST_FILES)
-	@echo "All tests are passing."
+test: $(JLDOM) $(MOCHA) dist/bling.js $(filter-out setup.coffee, $(wildcard test/*.coffee))
+	# All tests are passing.
 
 test/bling.coffee: bling.coffee
 	# Testing $<
@@ -31,40 +37,46 @@ test/%.coffee: plugins/%.coffee bling.coffee
 	# Testing $<
 	@$(MOCHA) $(MOCHA_OPTS) $@ && touch $@
 
-bench: release $(TIME_FILES)
-	@echo "All benchmarks are complete."
-	@cat bench/*.time
-
-bench/%.coffee.time: bench/%.coffee plugins/%.coffee bench/setup.coffee bling.coffee Makefile
-	@echo Running $<
-	@$(COFFEE) $< > $@
-
 site: dist/bling.js test $(UGLIFY)
+	# Stashing master...
 	@git stash save &> /dev/null
-	@git checkout site
+	# Checking out site...
+	@git checkout site &> /dev/null
 	@sleep 1
+	# Copy dist/ to js/
 	@cp dist/bling* js/
 	@git show master:package.json > js/package.json
+	# Update documentation...
 	@mkdir -p doc
 	@git show master:doc/index.html > doc/index.html
+	# Minify and compress...
 	@(cd js \
 		&& ../$(UGLIFY) bling.js -c --source-map bling.min.js.map --in-source-map bling.js.map  -m -r '$,Bling,window,document' --screw-ie8 -o bling.min.js \
-		&& (gzip -f9c bling.min.js > bling.min.js.gz))
-	@git add -f js/bling* js/package.json doc/*
-	@git commit -am "make site" || true
+		&& (gzip -f9c bling.min.js > bling.min.js.gz)) > /dev/null
+	# Commit to site branch...
+	@git add -f js/bling* js/package.json doc/* &> /dev/null
+	@git commit --no-gpg-sign -am "make site" &> /dev/null || true
 	@sleep 1
-	@git checkout master
+	# Restoring master...
+	@git checkout master &> /dev/null
 	@sleep 1
-	@git stash pop || true
+	@git stash pop &> /dev/null || true
 
 dist/bling.js: dist/bling.coffee $(COFFEE)
-	@echo Compiling $< to $@...
+	#  Compiling $< to $@...
 	@(cd dist && ../node_modules/.bin/coffee -cm bling.coffee)
 
 dist/bling.coffee: bling.coffee $(shell ls plugins/*.coffee | sort -f)
-	@echo Packing plugins into $@...
+	#  Packing plugins into $@...
 	@mkdir -p dist
-	@cat $^ | sed -E 's/^	*# .*$$//g' | grep -v '^ *$$' | $(GPP) $(GPP_OPTS) > $@
+	@cat $^ | $(GPP_FILTER) > $@
+
+dist/bling.min.js: dist/bling.js $(UGLIFY)
+		(cd dist && \
+			../$(UGLIFY) bling.js -c --source-map bling.min.js.map \
+				--in-source-map bling.js.map \
+				-m -r '$,Bling,window,document' \
+				--screw-ie8 -o bling.min.js)
 
 clean:
 	rm -rf dist/*
@@ -81,4 +93,4 @@ $(JLDOM):
 $(UGLIFY):
 	npm install uglify-js
 
-.PHONY: all bling clean release site test
+.PHONY: all clean release site test

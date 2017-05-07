@@ -13,7 +13,7 @@ echo Making new release: $NEW from current release: $OLD... && \
 	echo Writing VERSION file... && \
 	echo $NEW > VERSION &&
 	echo Committing package.json && \
-	git commit package.json VERSION -m "v$NEW" &> /dev/null && \
+	git commit --no-gpg-sign package.json VERSION -m "v$NEW" &> /dev/null && \
 	echo Buiding site branch... && \
 	make site && \
 	echo Pushing to github... && \

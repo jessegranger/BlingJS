@@ -11,7 +11,7 @@
 # stores and dequeues handlers.
 $.plugin
 	provides: "delay,immediate,interval"
-	depends: "is,select,extend,bound"
+	depends: "is,select,extend,bound,core"
 , ->
 	$:
 		delay: do ->
@@ -54,7 +54,7 @@ $.plugin
 					}
 				else throw new Error "Bad arguments to $.delay (expected: int,function given: #{$.type n},#{$.type f})"
 
-		immediate: do -> switch
+		immediate: switch
 			when 'setImmediate' of $.global then $.global.setImmediate
 			when process?.nextTick? then process.nextTick
 			else (f) -> setTimeout(f, 0)
