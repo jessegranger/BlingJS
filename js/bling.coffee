@@ -2560,8 +2560,7 @@ $.plugin
 	_callAll = (f, c, arg) ->
 		while (typeof f) is "function"
 			f = f.call c, arg
-		if $.is 'number', f
-			c.state = f	
+		c.state = f
 	keyEscapes =
 		"\n": "n"
 		"\r": "r"
@@ -2576,23 +2575,36 @@ $.plugin
 	
 	log = $.logger "[StateMachine]"
 	$: StateMachine: class StateMachine 
+		@extractCode = (f, priorText='') -> 
+			return "" unless f?
+			s = f.toString() \
+				.replace(/^\s+/,"") \
+				.replace(/\r/g, "##R##") \
+				.replace(/\n/g, "##N##") \
+				.replace(/\/\*(.*)\*\//g, "") \
+				.replace(/\/\/(.*)(##N##|##R##)*/g,"")
+			if s.indexOf("function") is 0
+				s = s.replace(/function [^{]+ *{\s*/,priorText)
+			else if /\([^{]+ *=>\s*{/.test s
+				s = s.replace(/\([^{]+ *{\s*/,priorText)
+			return s \
+				.replace(/return ([^;]+),(\d+)/, '$1;s=$2') \
+				.replace('return ', 's = ') \
+				.replace(/\s*}$/,'') \
+				.replace(/;*(##N##|##R##)\s*/g,';') \
+				.replace(/##R##/g, "\r") \
+				.replace(/##N##/g, "\n") \
+				.replace(/^\s+/,"") \
+				.replace(/\s+$/,"") \
+				? ""
 		constructor: (table, debug=false) ->
 			parse = null
 			trace = debug and "$.log('state:',s,'i:',i,'c:',c);" or ""
-			extractCode = (f, priorText='') -> 
-				code = f?.toString()
-					.replace(/function [^{]+ *{\s*/,priorText)
-					.replace(/return ([^;]+),(\d+)/, '$1;s=$2') 
-					.replace('return ', 's = ')
-					.replace(/\s*}$/,'')
-					.replace(/;*\n\s*/g,';')
-				code ? ""
 			ret = "s=s|0;for(i=i|0;i<=d.length;i++){c=d[i]||'eof';#{trace}switch(s){"
 			for state,rules of table 
 				if 'enter' of rules 
 					priorText = 'p=s;'
-					onEnter = extractCode(rules.enter, priorText)
-					$.log "extractCode from", rules.enter, " OUTPUT: ", onEnter
+					onEnter = StateMachine.extractCode(rules.enter, priorText)
 					onEnter = "if(s!==p){#{onEnter};if(s!==p){i--;break}}"
 				else
 					onEnter = ""
@@ -2603,7 +2615,7 @@ $.plugin
 					"case #{state}:#{onEnter}switch(c){"
 				for _c,_code of rules
 					continue if _c is 'enter' 
-					_code = extractCode(_code, priorText).replace(/\r|\n/g,'') + ";break;"
+					_code = StateMachine.extractCode(_code, priorText).replace(/\r|\n/g,'') + ";break;"
 					ret += switch _c
 						when 'def' then "default:#{_code}"
 						else            "case '#{escapeAsKey _c}':#{_code}"
@@ -2831,37 +2843,38 @@ $.plugin
 		no_eof =
 			eof: -> @emitError("Unexpected end of input")
 		
-		o = (a...) -> $.extend a...
+		rule = (a...) -> $.extend a...
 		constructor: ->
 			super [
 				enter:   ->
 						@tag = @id = @cls = @attr = @val = @text = ""
 						@attrs = {}
 						1
-				o { def: (c) ->  @tag += c; 1 }, common
-				o { def: (c) ->  @id += c; 2 }, common
-				o { def: (c) ->  @cls += c; 3 }, common,
+				rule { def: (c) ->  @tag += c; 1 }, common
+				rule { def: (c) ->  @id += c; 2 }, common
+				rule { def: (c) ->  @cls += c; 3 }, common,
 					enter: -> @cls += (@cls.length and " " or ""); 3
 					".":   -> @cls += " "; 3
-				o { def: (c) ->  @attr += c; 4 }, no_eof,
+				rule { def: (c) ->  @attr += c; 4 }, no_eof,
 					"=":   -> 5
 					"]":   -> @attrs[@attr] = @val; @attr = @val = ""; 1
-				o { def: (c) ->  @val += c; 5 }, no_eof,
+				rule { def: (c) ->  @val += c; 5 }, no_eof,
 					"]":   -> @attrs[@attr] = @val; @attr = @val = ""; 1
-				o { def: (c) ->  @text += c; 6 }, no_eof,
+				rule { def: (c) ->  @text += c; 6 }, no_eof,
 					'\\':  -> 8
 					'"':   -> @emitText()
-				o { def: (c) ->  @text += c; 7 }, no_eof,
+				rule { def: (c) ->  @text += c; 7 }, no_eof,
 					'\\':  -> 9
 					"'":   -> @emitText()
-				o { def: (c) ->  @text += c; 6 }, no_eof
-				o { def: (c) ->  @text += c; 7 }, no_eof
+				rule { def: (c) ->  @text += c; 6 }, no_eof
+				rule { def: (c) ->  @text += c; 7 }, no_eof
 			]
 			@reset()
 		reset: ->
 			@fragment = @cursor = document.createDocumentFragment()
 			@tag = @id = @cls = @attr = @val = @text = ""
 			@attrs = {}
+			@
 		emitError: (msg) -> throw new Error "#{msg}: #{@input}"
 		emitNodeAndReparent: (nextCursor) ->
 			if @tag
@@ -2879,14 +2892,9 @@ $.plugin
 				or @text = ""
 			0
 	machine = new SynthMachine()
-	return {
-		$:
-			synth: (expr) ->
-				machine.reset()
-				machine.run(expr)
-				$ if machine.fragment.childNodes.length is 1 then machine.fragment.childNodes[0]
-				else machine.fragment
-	}
+	return $: synth: (expr) ->
+		f = machine.reset().run(expr, 0).fragment
+		return $(if f.childNodes.length is 1 then f.childNodes[0] else f)
 $.plugin
 	depends: "StateMachine, function"
 	provides: "template"

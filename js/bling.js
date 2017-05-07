@@ -5463,9 +5463,7 @@
       while ((typeof f) === "function") {
         f = f.call(c, arg);
       }
-      if ($.is('number', f)) {
-        return c.state = f;
-      }
+      return c.state = f;
     };
     keyEscapes = {
       "\n": "n",
@@ -5482,28 +5480,36 @@
     return {
       $: {
         StateMachine: StateMachine = (function() {
+          StateMachine.extractCode = function(f, priorText) {
+            var ref, s;
+            if (priorText == null) {
+              priorText = '';
+            }
+            if (f == null) {
+              return "";
+            }
+            s = f.toString().replace(/^\s+/, "").replace(/\r/g, "##R##").replace(/\n/g, "##N##").replace(/\/\*(.*)\*\//g, "").replace(/\/\/(.*)(##N##|##R##)*/g, "");
+            if (s.indexOf("function") === 0) {
+              s = s.replace(/function [^{]+ *{\s*/, priorText);
+            } else if (/\([^{]+ *=>\s*{/.test(s)) {
+              s = s.replace(/\([^{]+ *{\s*/, priorText);
+            }
+            return (ref = s.replace(/return ([^;]+),(\d+)/, '$1;s=$2').replace('return ', 's = ').replace(/\s*}$/, '').replace(/;*(##N##|##R##)\s*/g, ';').replace(/##R##/g, "\r").replace(/##N##/g, "\n").replace(/^\s+/, "").replace(/\s+$/, "")) != null ? ref : "";
+          };
+
           function StateMachine(table, debug) {
-            var _c, _code, err, extractCode, hasRules, onEnter, parse, priorText, ret, rules, state, trace;
+            var _c, _code, err, hasRules, onEnter, parse, priorText, ret, rules, state, trace;
             if (debug == null) {
               debug = false;
             }
             parse = null;
             trace = debug && "$.log('state:',s,'i:',i,'c:',c);" || "";
-            extractCode = function(f, priorText) {
-              var code;
-              if (priorText == null) {
-                priorText = '';
-              }
-              code = f != null ? f.toString().replace(/function [^{]+ *{\s*/, priorText).replace(/return ([^;]+),(\d+)/, '$1;s=$2').replace('return ', 's = ').replace(/\s*}$/, '').replace(/;*\n\s*/g, ';') : void 0;
-              return code != null ? code : "";
-            };
             ret = "s=s|0;for(i=i|0;i<=d.length;i++){c=d[i]||'eof';" + trace + "switch(s){";
             for (state in table) {
               rules = table[state];
               if ('enter' in rules) {
                 priorText = 'p=s;';
-                onEnter = extractCode(rules.enter, priorText);
-                $.log("extractCode from", rules.enter, " OUTPUT: ", onEnter);
+                onEnter = StateMachine.extractCode(rules.enter, priorText);
                 onEnter = "if(s!==p){" + onEnter + ";if(s!==p){i--;break}}";
               } else {
                 onEnter = "";
@@ -5515,7 +5521,7 @@
                 if (_c === 'enter') {
                   continue;
                 }
-                _code = extractCode(_code, priorText).replace(/\r|\n/g, '') + ";break;";
+                _code = StateMachine.extractCode(_code, priorText).replace(/\r|\n/g, '') + ";break;";
                 ret += (function() {
                   switch (_c) {
                     case 'def':
@@ -6014,7 +6020,7 @@
   }, function() {
     var SynthMachine, machine;
     SynthMachine = (function(superClass) {
-      var common, htmlType, no_eof, o;
+      var common, htmlType, no_eof, rule;
 
       extend1(SynthMachine, superClass);
 
@@ -6064,7 +6070,7 @@
         }
       };
 
-      o = function() {
+      rule = function() {
         var a;
         a = 1 <= arguments.length ? slice.call(arguments, 0) : [];
         return $.extend.apply($, a);
@@ -6078,17 +6084,17 @@
               this.attrs = {};
               return 1;
             }
-          }, o({
+          }, rule({
             def: function(c) {
               this.tag += c;
               return 1;
             }
-          }, common), o({
+          }, common), rule({
             def: function(c) {
               this.id += c;
               return 2;
             }
-          }, common), o({
+          }, common), rule({
             def: function(c) {
               this.cls += c;
               return 3;
@@ -6102,7 +6108,7 @@
               this.cls += " ";
               return 3;
             }
-          }), o({
+          }), rule({
             def: function(c) {
               this.attr += c;
               return 4;
@@ -6116,7 +6122,7 @@
               this.attr = this.val = "";
               return 1;
             }
-          }), o({
+          }), rule({
             def: function(c) {
               this.val += c;
               return 5;
@@ -6127,7 +6133,7 @@
               this.attr = this.val = "";
               return 1;
             }
-          }), o({
+          }), rule({
             def: function(c) {
               this.text += c;
               return 6;
@@ -6139,7 +6145,7 @@
             '"': function() {
               return this.emitText();
             }
-          }), o({
+          }), rule({
             def: function(c) {
               this.text += c;
               return 7;
@@ -6151,12 +6157,12 @@
             "'": function() {
               return this.emitText();
             }
-          }), o({
+          }), rule({
             def: function(c) {
               this.text += c;
               return 6;
             }
-          }, no_eof), o({
+          }, no_eof), rule({
             def: function(c) {
               this.text += c;
               return 7;
@@ -6169,7 +6175,8 @@
       SynthMachine.prototype.reset = function() {
         this.fragment = this.cursor = document.createDocumentFragment();
         this.tag = this.id = this.cls = this.attr = this.val = this.text = "";
-        return this.attrs = {};
+        this.attrs = {};
+        return this;
       };
 
       SynthMachine.prototype.emitError = function(msg) {
@@ -6209,9 +6216,9 @@
     return {
       $: {
         synth: function(expr) {
-          machine.reset();
-          machine.run(expr);
-          return $(machine.fragment.childNodes.length === 1 ? machine.fragment.childNodes[0] : machine.fragment);
+          var f;
+          f = machine.reset().run(expr, 0).fragment;
+          return $(f.childNodes.length === 1 ? f.childNodes[0] : f);
         }
       }
     };
