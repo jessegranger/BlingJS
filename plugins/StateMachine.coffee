@@ -5,41 +5,42 @@ $.plugin
 	_callAll = (f, c, arg) ->
 		while (typeof f) is "function"
 			f = f.call c, arg
-		if $.is 'number', f
-			c.state = f	
+		c.state = f	
 	
 	log = $.logger "[StateMachine]"
 
 	$: StateMachine: class StateMachine # see plugins/synth for a complete usage example
-		constructor: (@table) ->
-			state = null
+		constructor: (table, state=null) ->
+			table or= {}
+			table[state] or= {}
+			# state: property
 			$.defineProperty @, "state",
-				set: (m) ->
-					if m isnt state and m of @table
-						_callAll @table[state = m].enter, @
-					else if m is null
+				get: -> state
+				set: (k) =>
+					if k isnt state and k of table
+						state = k
+						_callAll table[state].enter, @
+					else if k is null
 						state = null
 					state
-				get: -> state
+			# row: property
+			$.defineProperty @, "row",
+				get: -> table[state]
 
 		# static and instance versions of a state-changer factory
-		goto: go = (m, reset=false) -> ->
+		goto: go = (k, reset=false) -> ->
 			if reset # force enter: to trigger
 				@state = null
-			@state = m
+			k
 		@goto: go
 
 		tick: (c) ->
-			row = @table[@state]
-			return null unless row?
+			row = @row
 			_callAll (row[c] ? row.def), @, c
 
-		run: (inputs) ->
-			# run the enter: rule for state 0
-			@state = 0
-			# run all the inputs through the machine
-			@tick(c) for c in inputs
-			# run the eof: rule for the final state
-			_callAll @table[@state].eof, @
+		run: (inputs, initial_state=null) ->
+			@state = initial_state
+			@tick(c) for c in inputs # run all the inputs through the machine
+			_callAll @row.eof, @ # run the eof: rule for the final state
 			@
 

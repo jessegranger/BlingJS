@@ -1,6 +1,9 @@
 [$, assert] = require './setup'
 
 describe ".StateMachine", ->
+	it "is defined", ->
+		assert $.StateMachine?
+
 	it "allows subclassing to define machines", ->
 		class T extends $.StateMachine
 		t = new T
@@ -25,5 +28,5 @@ describe ".StateMachine", ->
 				constructor: ->
 					super(Capper.STATE_TABLE)
 
-			assert.equal new Capper().run("hello").output, "<<HELLO>>"
+			assert.equal new Capper().run("hello", 0).output, "<<HELLO>>"
 
