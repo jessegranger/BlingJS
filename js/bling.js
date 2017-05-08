@@ -6184,15 +6184,15 @@
       };
 
       SynthMachine.prototype.emitNodeAndReparent = function(nextCursor) {
-        var k, node, ref, v;
-        if (this.tag) {
-          this.cursor.appendChild(node = $.extend(document.createElement(this.tag), {
-            id: this.id || void 0,
-            className: this.cls || void 0
-          }));
-          ref = this.attrs;
-          for (k in ref) {
-            v = ref[k];
+        var k, node, ref, ref1, ref2, ref3, v;
+        if (((ref = this.tag) != null ? ref.length : void 0) > 0) {
+          node = document.createElement(this.tag);
+          ((ref1 = this.id) != null ? ref1.length : void 0) > 0 && (node.id = this.id);
+          ((ref2 = this.cls) != null ? ref2.length : void 0) > 0 && (node.className = this.cls);
+          this.cursor.appendChild(node);
+          ref3 = this.attrs;
+          for (k in ref3) {
+            v = ref3[k];
             node.setAttribute(k, v);
           }
         }
