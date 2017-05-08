@@ -13,13 +13,13 @@
 # We need a few things to get started.
 
 # A shim for `Object.keys`.
-Object.keys or= (o) -> (k for k of o)
+Object.keys or= (o) => (k for k of o)
 
 # A shim for `Object.values`.
-Object.values or= (o) -> (o[k] for k of o)
+Object.values or= (o) => (o[k] for k of o)
 
 # A way to assign properties from `b` to `a`.
-extend = (a, b...) ->
+extend = (a, b...) =>
 	for obj in b when obj
 		a[k] = v for k,v of obj # when v?
 	a
@@ -49,23 +49,22 @@ extend = (a, b...) ->
 
 # So, the Bling constructor should not be called as `new Bling`,
 # rather it should be used python style: `Bling(stuff)`.
-class Bling extends Array
+Bling = (args...) ->
 	"Bling:nomunge"
-	constructor: (args...) ->
-		if args.length is 1 # If there was only one argument,
-			# Classify the type to get a type-instance.
-			# Then convert to something array-like
-			args = $.type.lookup(args[0]).array(args[0])
-		b = $.inherit Bling, args
-		# Firefox clobbers the length when you change the inheritance chain on an array, so we patch it up here
-		if args.length is 0 and args[0] isnt undefined
-			i = 0
-			i++ while args[i] isnt undefined
-			b.length = i
-		if 'init' of Bling # See: plugins/hook.coffee
-			# This allows plugins to modify the constructor behavior
-			return Bling.init(b)
-		return b
+	if args.length is 1 # If there was only one argument,
+		# Classify the type to get a type-instance.
+		# Then convert to something array-like
+		args = $.type.lookup(args[0]).array(args[0])
+	b = $.inherit Bling, args
+	# Firefox clobbers the length when you change the inheritance chain on an array, so we patch it up here
+	if args.length is 0 and args[0] isnt undefined
+		i = 0
+		i++ while args[i] isnt undefined
+		b.length = i
+	if 'init' of Bling # See: plugins/hook.coffee
+		# This allows plugins to modify the constructor behavior
+		return Bling.init(b)
+	return b
 $ = Bling
 $.global = do -> @
 
