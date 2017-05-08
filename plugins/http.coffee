@@ -70,6 +70,9 @@ $.plugin
 								opts.error xhr.status, xhr.statusText
 				for k,v of opts.headers
 					xhr.setRequestHeader k, v
+				try xhr.addEventListener "progress", (evt) =>
+					$.log("xhr progress event", evt.loaded, evt.total)
+					result.emit('progress', evt.loaded, evt.total)
 				# Send the request body.
 				xhr.send opts.data
 				# Return a Promise.
