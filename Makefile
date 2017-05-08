@@ -6,7 +6,7 @@ JLDOM=node_modules/jldom
 
 MOCHA=node_modules/.bin/mocha
 MOCHA_FMT?=dot
-MOCHA_OPTS=--compilers coffee:coffee-script/register \
+MOCHA_OPTS=--compilers coffee:coffeescript/register \
 	--globals document,window,Bling,$$,_ \
 	-R ${MOCHA_FMT} \
 	-s 500 \
