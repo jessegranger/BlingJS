@@ -3,9 +3,10 @@
 describe "PubSub plugin:", ->
 	it "defines $.Hub", ->
 		assert typeof $.Hub is "function"
-	it "puts a root Hub on $ itself", ->
-		assert typeof $.publish is "function"
-		assert typeof $.subscribe is "function"
+	it "puts a root Hub on $ itself (publish)", ->
+		assert.equal "function", typeof $.publish
+	it "puts a root Hub on $ itself (subscribe)", ->
+		assert.equal "function", typeof $.subscribe
 	it "can create new Hubs", ->
 		h = new $.Hub()
 		assert typeof $.publish is "function"

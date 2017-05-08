@@ -33,12 +33,13 @@ describe "EventEmitter", ->
 		a = $.EventEmitter a:1
 		pass = 0
 		a.on(
-			smoke: -> pass += 1
-			steam: -> pass += 1
+			smoke: -> a.a += pass += 1
+			steam: -> a.a += pass += 1
 		)
 		a.emit 'smoke'
 		a.emit 'steam'
 		assert.equal pass, 2
+		assert.equal a.a, 4
 	it "returns itself after binding", ->
 		a = $.EventEmitter()
 		b = a.on( open: -> )
@@ -48,7 +49,7 @@ describe "EventEmitter", ->
 	describe "class extends support", ->
 		class Foo extends $.EventEmitter
 			constructor: ->
-				super @
+				super()
 				@x = 1
 			method: ->
 		f = new Foo()
@@ -65,7 +66,7 @@ describe "EventEmitter", ->
 			assert.equal flag, true
 		describe "inheritance chain", ->
 			class A extends $.EventEmitter
-				constructor: -> super @
+				constructor: -> super()
 				A: ->
 			class B extends A
 				B: ->

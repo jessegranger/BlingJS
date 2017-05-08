@@ -50,7 +50,7 @@ $.plugin
 
 	protoChain = (obj, arr) ->
 		return arr unless obj and obj.constructor
-		return protoChain(obj.constructor.__super__, arr.push obj.constructor)
+		return protoChain obj.__proto__, arr.push obj.constructor
 
 	return $: {
 		debugStack: (error, node_modules=false) ->
@@ -59,5 +59,5 @@ $.plugin
 				when $.is 'string', error then error
 				else String(error)
 			explodeStack stack, node_modules
-		protoChain: (o) -> protoChain(o, $())
+		protoChain: (o) -> protoChain(o.__proto__, $())
 	}

@@ -4,14 +4,20 @@ $.plugin
 	provides: "promise"
 , ->
 	class NoValue # a named totem
-	Promise = (obj = {}) ->
+	Promise = (obj) ->
+		if obj in [$.global, null, undefined]
+			if this is $
+				obj = {}
+			else
+				obj = this
 
 		# There is an array of waiting functions.
 		waiting = []
 
 		err = result = NoValue
 
-		# When either one, err or result, arrive, consume_all notifies all the functions in the waiting array.
+		# When either err or result arrives,
+		# consume_all notifies all the functions in the waiting array.
 		consume_all = (e, v) ->
 			while w = waiting.shift()
 				consume_one w, e, v
@@ -53,16 +59,16 @@ $.plugin
 				if $.is "function", timeout
 					[cb, timeout] = [timeout, Infinity]
 				if err isnt NoValue
-					$.immediate -> consume_one cb, err, null
+					$.immediate => consume_one cb, err, null
 				else if result isnt NoValue
-					$.immediate -> consume_one cb, null, result
+					$.immediate => consume_one cb, null, result
 				else # this promise hasn't been resolved OR rejected yet
 					waiting.push cb # so save this callback for later
 					if isFinite parseFloat timeout
-						cb.timeout = $.delay timeout, ->
+						cb.timeout = $.delay timeout, =>
 							if (i = waiting.indexOf cb) > -1
 								waiting.splice i, 1
-								consume_one cb, err = new Error('timeout'), undefined
+								consume_one cb, (err = new Error 'timeout'), undefined
 				@
 			then: (f, e) -> @wait (err, x) ->
 				if err then e?(err)

@@ -16,4 +16,4 @@ describe "$.protoChain", ->
 		class A
 		class B extends A
 		class C extends B
-		assert.deepEqual [C, B, A], $.protoChain(new C())
+		assert.deepEqual [C, B, A, Object], $.protoChain(new C())

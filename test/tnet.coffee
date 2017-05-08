@@ -80,10 +80,14 @@ describe "$.TNET", ->
 				assert.equal $.TNET.stringify(m), "16:1:a'1:1#1:b'1:2#M"
 			it "function", ->
 				assert.equal $.TNET.stringify((x)->x*x), "27:0:'4:1:x']13:return x * x;')"
-			it "function with name", ->
+			it "class", ->
 				class Foo
-					constructor: (x) -> return x * x
-				assert.equal $.TNET.stringify(Foo), "30:3:Foo'4:1:x']13:return x * x;')"
+					constructor: (x) -> @x = x * x
+					sq: -> @x
+				f = $.TNET.parse($.TNET.stringify(Foo))
+				_f = new f(3)
+				assert.equal _f.sq(), 9
+				assert.notEqual f, Foo
 			it "regexp", ->
 				assert.equal $.TNET.stringify(/^f.*o$/), "6:^f.*o$/"
 			it "class instance", ->
@@ -127,7 +131,7 @@ describe "$.TNET", ->
 					f.x = f
 					$.TNET.registerClass Foo
 					str = $.TNET.stringify f
-					assert.equal str, "15:1:1#8:1:x'1:0@}C"
+					assert.equal str, "15:1:2#8:1:x'1:0@}C"
 					g = $.TNET.parse str
 					assert.equal g.x, g
 

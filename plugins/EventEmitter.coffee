@@ -9,18 +9,21 @@ $.plugin
 	# becomes an EventEmitter automatically, you can extend a class from it:
 	# `class Foo extends $.EventEmitter`, or you can mix it in to an instance:
 	# `obj = $.EventEmitter(obj)`.
-	$: EventEmitter: $.init.append (obj = {}) ->
+	$: EventEmitter: $.init.append (obj) ->
+		if obj in [$.global, null, undefined]
+			if this in [$.global, $]
+				obj = {}
+			else obj = this
 		listeners = Object.create null
 		list = (e) -> (listeners[e] or= [])
-		$.inherit {
+		return $.inherit {
 			emit:               (e, a...) -> (f.apply(@, a) for f in list(e)); @
 			on: add = (e, f) ->
-				switch $.type e
-					when 'object' then @addListener(k,v) for k,v of e
-					when 'string'
-						list(e).push(f)
-						@emit('newListener', e, f)
-				return @
+				('string' is typeof e) and \
+					list(e).push(f)
+				('object' is typeof e) and \
+					@addListener(k,v) for k,v of e
+				@
 			addListener: add
 			removeListener:     (e, f) -> (l.splice i, 1) if (i = (l = list e).indexOf f) > -1
 			removeAllListeners: (e) -> listeners[e] = []

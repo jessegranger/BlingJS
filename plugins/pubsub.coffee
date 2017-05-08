@@ -44,6 +44,12 @@ $.plugin
 					a.splice i,1
 			func
 
-	return {
-		$: $.extend new Hub(), { Hub }
-	}
+	ret = { $: { Hub } }
+	rootHub = new Hub()
+	# reading properties from prototypes is harder now
+	# since enumerable is false by default now
+	for name,prop of Object.getOwnPropertyDescriptors(Hub.prototype)
+		continue if name is 'constructor'
+		if "function" is typeof prop.value
+			ret.$[name] = prop.value.bind rootHub
+	return ret

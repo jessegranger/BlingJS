@@ -146,9 +146,9 @@ describe "String plugin:", ->
 				assert.equal $.commaize({ a: 1 }), undefined
 		describe "currency", ->
 			it "is optional", ->
-				assert.equal $.commaize(1000, null, null, "$"), "$1,000"
+				assert.equal $.commaize(1000, undefined, undefined, "$"), "$1,000"
 			it "supports negative amounts", ->
-				assert.equal $.commaize(-1000, null, null, "$"), "-$1,000"
+				assert.equal $.commaize(-1000, undefined, undefined, "$"), "-$1,000"
 	describe ".slugize", ->
 		it "converts a phrase to a slug", ->
 			assert.equal $.slugize("foo bar"), "foo-bar"

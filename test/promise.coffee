@@ -89,7 +89,7 @@ describe "$.Promise()", ->
 			assert.equal f.pass, true
 		it "works with super", ->
 			class Foo extends $.Promise
-				constructor: (@pass) -> super @
+				constructor: (@pass) -> super()
 			f = new Foo(false)
 			f.wait (err, data) -> f.pass = data
 			f.resolve true

@@ -75,9 +75,9 @@ describe "Index/Query plugin:", ->
 				sum: @select('val').sum()
 				k: @select('k').first()
 			),
-				[ { name: "a", sum: 3, k:1 },
-					{ name: "a", sum: 3, k:2 },
-				  { name: "b", sum: 4, k:1 },
+				[ { name: "a", sum: 3, k:1 }
+					{ name: "a", sum: 3, k:2 }
+					{ name: "b", sum: 4, k:1 }
 					{ name: "c", sum: 5, k:1 }
 					{ name: undefined, sum: 6, k:undefined }
 				]
