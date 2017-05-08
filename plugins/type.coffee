@@ -126,6 +126,7 @@ $.plugin
 		register "number",    is: (o) -> typeof o is "number" and not isNaN(o)
 		register "bool",      is: (o) -> typeof o is "boolean" # or try String(o) in ["true","false"]
 		register "function",  is: (o) -> typeof o is "function"
+		register "class",     is: (o) -> typeof o is "function" and ('prototype' of (props = Object.getOwnPropertyDescriptors o)) and not ('arguments' of props)
 		register "global",    is: (o) -> typeof o is "object" and 'setInterval' of o
 		register "arguments", is: (o) -> typeof o is "object" and 'callee' of o and 'length' of o
 		# These checks for null and undefined are small exceptions to the

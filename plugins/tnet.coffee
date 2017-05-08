@@ -101,11 +101,22 @@ $.plugin
 				[name, rest] = unpackOne(s)
 				[args, rest] = unpackOne(rest)
 				[body, rest] = unpackOne(rest)
-				return makeFunction name, args.join(), body
+				try return makeFunction name, args.join(), body
+				catch err
+					$.log "Failed to makeFunction."
+					$.log "Arguments:", args.join()
+					$.log "Body:", body
 		"regexp":
 			symbol: "/"
 			pack: (r) -> String(r).slice(1,-1)
 			unpack: (s) -> RegExp(s)
+		"class":
+			symbol: "{"
+			pack: (o) ->
+				packOne ($.compress o.toString()), "string"
+			unpack: (s) ->
+				[s, rest] = unpackOne s
+				return eval $.decompress s
 		"class instance":
 			symbol: "C"
 			pack: (o) ->
