@@ -1,6 +1,22 @@
 [$, assert] = require './setup'
 
 describe ".StateMachine", ->
+	it "is defined", ->
+		assert $.StateMachine?
+	
+	describe ".extractCode", ->
+		test_cases = [
+			[ ((a) -> a).toString(), "s = a;" ]
+			[ "()=>{}", "" ]
+			[ "(b)=>{return b}", "s = b" ] 
+			[ "(c)=>{ /* {}*/ return c; }", "s = c;" ]
+			[ "(a/*{*/)=>{return a;}", "s = a;" ]
+		]
+		for [f, s] in test_cases
+			it "supports: " + f, ->
+				assert.equal $.StateMachine.extractCode(eval(f)), s
+		null
+
 	it "allows subclassing to define machines", ->
 		class T extends $.StateMachine
 		t = new T
@@ -16,7 +32,7 @@ describe ".StateMachine", ->
 		it "starts in state 0", ->
 			assert.equal new Capper().run(".").output, "<<.>>"
 		it "reads input and rules from @STATE_TABLE", ->
-			assert.equal new Capper().run("hello").output, "<<HELLO>>"
+			assert.equal new Capper().run("hello", 0).output, "<<HELLO>>"
 		describe "empty input", ->
 			class EmptyMachine extends $.StateMachine then constructor: -> super [
 				{
@@ -28,4 +44,3 @@ describe ".StateMachine", ->
 				assert new EmptyMachine().run("").eof
 			it "triggers an enter rule in state 0", ->
 				assert new EmptyMachine().run("").enter
-
