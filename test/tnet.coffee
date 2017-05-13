@@ -20,6 +20,12 @@ describe "$.TNET", ->
 				assert.deepEqual $.TNET.parse("12:1:1#1:2#1:3#$"), $(1,2,3)
 			it "object", ->
 				assert.deepEqual $.TNET.parse("16:1:a'1:1#1:b'1:2#}"), {a:1,b:2}
+			it "map", ->
+				m = $.TNET.parse("16:1:a'1:1#1:b'1:2#M")
+				assert m instanceof Map
+				assert.equal "map", $.type(m)
+				assert.equal m.get('a'), 1
+				assert.equal m.get('b'), 2
 			it "function", ->
 				f = $.TNET.parse "29:2:sq'4:1:x']13:return x * x;')"
 				assert $.is 'function', f
@@ -67,6 +73,11 @@ describe "$.TNET", ->
 				assert.equal $.TNET.stringify($ 1,2,3), "12:1:1#1:2#1:3#$"
 			it "object", ->
 				assert.equal $.TNET.stringify({a:1,b:2}), "16:1:a'1:1#1:b'1:2#}"
+			it "map", ->
+				m = new Map()
+				m.set 'a', 1
+				m.set 'b', 2
+				assert.equal $.TNET.stringify(m), "16:1:a'1:1#1:b'1:2#M"
 			it "function", ->
 				assert.equal $.TNET.stringify((x)->x*x), "27:0:'4:1:x']13:return x * x;')"
 			it "function with name", ->
@@ -86,5 +97,37 @@ describe "$.TNET", ->
 				assert.equal $.TNET.stringify(f), "15:1:1#8:1:x'1:4#}C"
 				g = $.TNET.parse $.TNET.stringify(f)
 				assert.equal g.sq(), 16
-
+			describe "circular references", ->
+				it "work in objects", ->
+					x = {}
+					x.y = { x: x }
+					str = $.TNET.stringify x
+					assert.equal str, "15:1:y'8:1:x'1:0@}}"
+					z = $.TNET.parse str
+					assert.equal z.y.x, z
+				it "work in arrays", ->
+					x = []
+					x.push(1)
+					x.push(x)
+					str = $.TNET.stringify x
+					assert.equal str, "8:1:1#1:0@]"
+					z = $.TNET.parse str
+					assert.equal z[0], 1
+					assert.equal z[1], z
+				it "work when deeply nested", ->
+					a = [ { x: { y: [ { } ] } } ]
+					a[0].x.y[0].z = a[0].x
+					str = $.TNET.stringify a
+					assert.equal str, "31:27:1:x'19:1:y'11:8:1:z'1:2@}]}}]"
+					b = $.TNET.parse str
+					assert.equal b[0].x.y[0].z, b[0].x
+				it "work in class instances", ->
+					class Foo
+					f = new Foo()
+					f.x = f
+					$.TNET.registerClass Foo
+					str = $.TNET.stringify f
+					assert.equal str, "15:1:1#8:1:x'1:0@}C"
+					g = $.TNET.parse str
+					assert.equal g.x, g
 

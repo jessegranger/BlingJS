@@ -18,3 +18,4 @@ release.sh
 test
 bling.coffee
 dist/*.gz
+dist/bling.js.map

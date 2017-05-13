@@ -34,3 +34,4 @@ describe "Index/Query plugin:", ->
 				assert.equal a.queryOne(a:3).b, 2
 				assert.equal a.queryOne(b:'b').a, 1
 				assert.equal a.queryOne({a:3,b:2}).c, 'c'
+

@@ -22,7 +22,7 @@ This **set philosophy** means that set operations are useful:
 These kinds of set operations are part of the "core" plugin.
 
 Everything is a plugin; since plugins can not only extend the prototype (by returning an object full of extensions),
-but can also inject code into the Bling constructor (by using $.pipe), there is very little needed outside.
+but can also inject code into the Bling constructor (by using $.hook), there is very little needed outside.
 
 The core plugin also provides some cool new things, like the `.select()` and `.zap()` operations.
 

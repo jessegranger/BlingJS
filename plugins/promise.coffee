@@ -5,8 +5,13 @@ $.plugin
 , ->
 	class NoValue # a named totem
 	Promise = (obj = {}) ->
+
+		# There is an array of waiting functions.
 		waiting = []
+
 		err = result = NoValue
+
+		# When either one, err or result, arrive, consume_all notifies all the functions in the waiting array.
 		consume_all = (e, v) ->
 			while w = waiting.shift()
 				consume_one w, e, v

@@ -44,11 +44,15 @@ describe "$.Promise()", ->
 				$.delay 200, ->
 					assert.equal pass, true
 					done()
+<<<<<<< HEAD
 		describe "can resolve with another promise", ->
 			a = $.Promise()
 			b = $.Promise()
 			a.resolve b
 			null
+=======
+				null
+>>>>>>> d8b0bb856d1bf8b13e2a4dd5d50c85599a610f60
 
 	describe "reject", ->
 		it "passes errors to queued callbacks", (done) ->
@@ -56,7 +60,11 @@ describe "$.Promise()", ->
 				if String(err) isnt "Error: fizzle"
 					done "expected: 'Error: fizzle' got: '#{String err}'"
 				else done()
+<<<<<<< HEAD
 				).reject "fizzle"
+=======
+			).reject "fizzle"
+>>>>>>> d8b0bb856d1bf8b13e2a4dd5d50c85599a610f60
 			null
 		it "ignores repeated calls", ->
 			pass = ""
@@ -274,3 +282,7 @@ describe "$.Progress", ->
 					a.then -> done()
 					a.finish(1)
 					null
+<<<<<<< HEAD
+=======
+
+>>>>>>> d8b0bb856d1bf8b13e2a4dd5d50c85599a610f60

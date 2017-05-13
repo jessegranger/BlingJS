@@ -1,5 +1,5 @@
 $.plugin
-	provides: "sortBy,sortedIndex,sortedInsert"
+	provides: "sortBy,sortedIndex,sortedInsert,groupBy"
 , ->
 	$:
 		sortedIndex: (array, item, sorter, lo = 0, hi = array.length) ->
@@ -17,20 +17,21 @@ $.plugin
 	sortBy: (sorter) ->
 		a = $()
 		for item in @
-			n = $.sortedIndex a, item, sorter
-			a.splice n, 0, item
+			a.sortedInsert(item, sorter)
 		a
 	sortedInsert: (item, sorter) ->
-		@splice ($.sortedIndex @, item, sorter), 0, item
+		if @length is 0 then @push item
+		else @splice ($.sortedIndex @, item, sorter), 0, item
 		@
 	groupBy: (sorter) ->
 		groups = {}
+		#define ADD_TO_GROUP(G,X) (groups[G] or= $()).push(X)
 		switch $.type sorter
 			when 'array','bling'
 				for x in @
 					c = (x[k] for k in sorter).join ","
-					(groups[c] or= $()).push x
-			when 'string' then for x in @ then (groups[x[sorter]] or= $()).push x
-			when 'function' then for x in @ then (groups[sorter(x)] or= $()).push x
+					ADD_TO_GROUP(c, x)
+			when 'string' then for x in @ then ADD_TO_GROUP(x[sorter], x)
+			when 'function' then for x in @ then ADD_TO_GROUP(sorter(x), x)
 		return $.valuesOf groups
 
