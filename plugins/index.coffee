@@ -6,21 +6,22 @@ $.depends 'hook', ->
 			index: (keyFunc) ->
 				if keyMakers.indexOf(keyFunc) is -1
 					keyMakers.push keyFunc
-					map.set(keyFunc.toString(), new Map())
+					map.set(keyFunc, new Map())
 				for x in @
 					key = keyFunc x
-					_map = map.get keyFunc.toString()
+					_map = map.get keyFunc
 					unless _map.has key
 						_map.set key, $()
 					_map.get(key).push x
 				@
 			query: (criteria) ->
 				for keyMaker in keyMakers
-					_map = map.get keyMaker.toString()
+					_map = map.get keyMaker
 					if _map.has key = keyMaker criteria
-						return _map.get(key)
-				return $()
+						for item in _map.get(key)
+							return if (yield item) is false
+				null
 			queryOne: (criteria) ->
-				return @query(criteria)[0]
+				@query(criteria).next().value
 		}, obj
 
