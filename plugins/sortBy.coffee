@@ -28,8 +28,9 @@ $.plugin
 		switch $.type sorter
 			when 'array','bling'
 				for x in @
-					c = (x[k] for k in key).join ","
+					c = (x[k] for k in sorter).join ","
 					(groups[c] or= $()).push x
-			when 'string' for x in @ then (groups[x[key]] or= $()).push x
+			when 'string' then for x in @ then (groups[x[sorter]] or= $()).push x
+			when 'function' then for x in @ then (groups[sorter(x)] or= $()).push x
 		return $.valuesOf groups
 

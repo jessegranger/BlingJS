@@ -45,3 +45,50 @@ describe "Sort plugin:", ->
 		it "works on fields", ->
 			assert.deepEqual $().sortedInsert({x:1,y:2}, 'y').sortedInsert({x:2,y:1}, 'y'), [{x:2,y:1},{x:1,y:2}]
 	
+
+	describe ".groupBy(key)", ->
+		objs = $([
+			{name: "a", k: 1, val: 1},
+			{name: "a", k: 1, val: 2},
+			{name: "a", k: 2, val: 3},
+			{name: "b", k: 1, val: 4},
+			{name: "c", k: 1, val: 5},
+			{ val: 6 }
+		])
+		it "groups objects by the key", ->
+			assert.equal objs.length, 6
+			assert.deepEqual objs.groupBy('name'), [
+				[ {name: "a", k:1, val: 1},
+					{name: "a", k:1, val: 2},
+					{name: "a", k:2, val: 3} ],
+				[ {name: "b", k:1, val: 4} ],
+				[ {name: "c", k:1, val: 5} ],
+				[ { val: 6 } ]
+			]
+		it "can group by multiple keys", ->
+			assert.deepEqual objs.groupBy(['name','k']), [
+				[ {name: "a", k:1, val: 1},
+					{name: "a", k:1, val: 2}
+				],
+				[ {name: "a", k:2, val: 3} ], # this 'a' gets its own group
+				[ {name: "b", k:1, val: 4} ],
+				[ {name: "c", k:1, val: 5} ],
+				[ { val: 6 } ]
+			]
+
+		it "is mappable", ->
+			assert.deepEqual objs.groupBy('name').map(-> @select('val').sum()),
+				[ 6, 4, 5, 6 ]
+
+		it "is mappable to a new object", ->
+			assert.deepEqual objs.groupBy(['name','k']).map(->
+				name: @select('name').first()
+				sum: @select('val').sum()
+				k: @select('k').first()
+			),
+				[ { name: "a", sum: 3, k:1 },
+					{ name: "a", sum: 3, k:2 },
+				  { name: "b", sum: 4, k:1 },
+					{ name: "c", sum: 5, k:1 }
+					{ name: undefined, sum: 6, k:undefined }
+				]
