@@ -4,6 +4,7 @@ describe "$.Promise()", ->
 	describe "wait", ->
 		it "queues a callback", (done) ->
 			$.Promise().wait((err, data) -> done(err)).resolve()
+			null
 		it "calls back in a later tick if already resolved", (done) ->
 			output = null
 			$.Promise().resolve("magic").wait (err, data) ->
@@ -13,6 +14,7 @@ describe "$.Promise()", ->
 			$.delay 20, ->
 				assert.equal output, "magic"
 				done()
+			null
 	describe "resolve", ->
 		it "passes data to queued callbacks", (done) ->
 			$.Promise().wait((err, data) ->
@@ -20,6 +22,7 @@ describe "$.Promise()", ->
 					done "rejected: no magic!"
 				else done()
 			).resolve "magic"
+			null
 		it "ignores repeated calls", ->
 			count = 1
 			a = $.Promise().wait -> count += count
@@ -31,6 +34,7 @@ describe "$.Promise()", ->
 				$.Promise().wait 100, (err, data) ->
 					assert.equal String(err), 'Error: timeout'
 					done()
+				null
 			it "does not fire an error if the promise is resolved in time", (done) ->
 				pass = false
 				$.Promise().wait(100, (err, data) ->
@@ -44,6 +48,7 @@ describe "$.Promise()", ->
 			a = $.Promise()
 			b = $.Promise()
 			a.resolve b
+			null
 
 	describe "reject", ->
 		it "passes errors to queued callbacks", (done) ->
@@ -52,6 +57,7 @@ describe "$.Promise()", ->
 					done "expected: 'Error: fizzle' got: '#{String err}'"
 				else done()
 				).reject "fizzle"
+			null
 		it "ignores repeated calls", ->
 			pass = ""
 			a = $.Promise().wait (err, data) -> pass += String(err)
@@ -127,6 +133,7 @@ describe "$.Promise()", ->
 			b.resolve('b')
 			c.resolve('c')
 			a.resolve('a')
+			null
 		it "fails when any sub-promise fails", (done) ->
 			a = $.Promise()
 			b = $.Promise()
@@ -138,6 +145,7 @@ describe "$.Promise()", ->
 			d.wait (err) ->
 				assert.equal "Error: err_b", String(err)
 				done()
+			null
 
 	describe ".handler()", ->
 		it "is a function", ->
@@ -148,12 +156,14 @@ describe "$.Promise()", ->
 			p = $.Promise()
 			p.handler(null, true)
 			p.then -> done()
+			null
 		it "can reject a promise", (done) ->
 			p = $.Promise()
 			p.handler(new Error(), null)
 			p.wait (err) ->
 				assert (err?)
 				done()
+			null
 
 describe "$.Progress", ->
 	it "is a Promise", ->
@@ -188,6 +198,7 @@ describe "$.Progress", ->
 				done()
 			q.finish 1, 'a'
 			q.finish 1, 'b'
+			null
 		it "emits 'progress' events", ->
 			a = $.Progress(2)
 			data = []
@@ -231,30 +242,35 @@ describe "$.Progress", ->
 					$.delay 10, cb
 					done
 				run 5, ok
+				null
 			describe "ignores", ->
 				it "objects", (done) ->
 					a = $.Progress(1)
 					a.include({})
 					a.then -> done()
 					a.finish(1)
+					null
 				it "strings", (done) ->
 					a = $.Progress(1)
 					a.include("a")
 					a.then -> done()
 					a.finish(1)
+					null
 				it "undefined", (done) ->
 					a = $.Progress(1)
 					a.include(undefined)
 					a.then -> done()
 					a.finish(1)
+					null
 				it "null", (done) ->
 					a = $.Progress(1)
 					a.include(null)
 					a.then -> done()
 					a.finish(1)
+					null
 				it "arrays", (done) ->
 					a = $.Progress(1)
 					a.include([1,2,3])
 					a.then -> done()
 					a.finish(1)
-
+					null

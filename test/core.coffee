@@ -23,6 +23,13 @@ describe "Core plugin:", ->
 				assert message.indexOf("[magic] message") > -1
 			finally
 				$.log.out = console.log
+	
+	describe ".keysOf()", ->
+		it "returns the keys of an object", ->
+			assert.deepEqual $.keysOf({ a:1,b:2 }), ['a', 'b']
+	describe ".valuesOf()", ->
+		it "returns the values of an object", ->
+			assert.deepEqual $.valuesOf({ a:1,b:2 }), [1, 2]
 
 	describe ".eq()", ->
 		it "selects a new set with only one element", ->
