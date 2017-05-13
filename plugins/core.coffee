@@ -26,8 +26,9 @@ $.plugin
 			keysOf: (o, own=false) ->
 				if own then $(k for own k of o)
 				else $(k for k of o)
-			valuesOf: (o, own=false) -> $.keysOf(o, own).map (k)->
-				return try o[k] catch err then err
+			valuesOf: (o, own=false) ->
+				if own then $(v for own k,v of o)
+				else $(v for k,v of o)
 
 		# Get a new set containing only the i-th element of _this_.
 		eq: (i) -> $([@[index i, @]])
