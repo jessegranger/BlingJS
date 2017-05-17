@@ -6,7 +6,7 @@ $.plugin
 		when 0 then $.extend {}, process.env
 		else process.env[name] ? def
 	set = (name, val) -> switch arguments.length
-		when 1 then $.extend process.env, arguments[0]
+		when 1 then $.extend process.env, name
 		when 2 then process.env[name] = val
 	parse = (data) ->
 		ret = {}
@@ -24,6 +24,8 @@ $.plugin
 			if (cur = process.env[name]) isnt prev
 				func prev, cur
 				prev = cur
+	int = (name, def) -> parseInt(process.env[name] ? def, 10)
+	float = (name, def) -> parseFloat(process.env[name] ? def)
 
-	$: config: $.extend get, {get, set, parse, watch}
+	$: config: $.extend get, {get, set, parse, watch, int, float}
 
