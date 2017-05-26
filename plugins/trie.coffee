@@ -16,13 +16,14 @@ $.plugin
 				@values or= []
 				@values.push item 
 			@
-		find: (prefix, p=0) ->
+		find: (prefix) -> return find @, prefix, 0
+		find = (t, prefix, p) ->
 			end = p >= prefix.length
-			if end and @values
-				for v in @values
+			if end and t.values
+				for v in t.values
 					return null if (yield v) is false
-			for c,child of @children when end or (c is prefix[p].toLowerCase())
-				`yield* child.find(prefix,p+1)`
+			for c,child of t.children when end or (c is prefix[p].toLowerCase())
+				`yield* find(child,prefix,p+1)`
 			null	
 	
 	return { $: { Trie } }
