@@ -18,9 +18,10 @@ $.depends 'hook', ->
 				for keyMaker in keyMakers
 					_map = map.get keyMaker
 					if _map.has key = keyMaker criteria
-						return _map.get(key)
-				return $()
+						for item in _map.get(key)
+							return if (yield item) is false
+				null
 			queryOne: (criteria) ->
-				return @query(criteria)[0]
+				@query(criteria).next().value
 		}, obj
 

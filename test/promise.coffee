@@ -14,6 +14,7 @@ describe "$.Promise()", ->
 			$.delay 20, ->
 				assert.equal output, "magic"
 				done()
+			null
 	describe "resolve", ->
 		it "passes data to queued callbacks", (done) ->
 			$.Promise().wait((err, data) ->
@@ -44,6 +45,11 @@ describe "$.Promise()", ->
 					assert.equal pass, true
 					done()
 				null
+		describe "can resolve with another promise", ->
+			a = $.Promise()
+			b = $.Promise()
+			a.resolve b
+			null
 
 	describe "reject", ->
 		it "passes errors to queued callbacks", (done) ->
@@ -269,4 +275,3 @@ describe "$.Progress", ->
 					a.then -> done()
 					a.finish(1)
 					null
-
