@@ -16,6 +16,7 @@
 	"devDependencies": {
 		"coffeescript": "next",
 		"jldom": "latest",
-		"mocha": "latest"
+		"mocha": "latest",
+		"uglify-es": "latest"
 	}
 }
