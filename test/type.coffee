@@ -8,7 +8,7 @@ describe "Type plugin:", ->
 			it "'undefined'", -> assert.equal $.type(), "undefined"
 			it "'null'",      -> assert.equal $.type(null), "null"
 			it "'array'",     -> assert.equal $.type([]), "array"
-			it "'function'",  -> assert.equal $.type(->), "function"
+			it "'function'",  -> assert.equal $.type((x) -> x * x), "function"
 			it "'bool'",      -> assert.equal $.type(true), "bool"
 			it "'regexp'",    -> assert.equal $.type(/./), "regexp"
 			it "'window'",    -> assert.equal $.type(window), "global"
