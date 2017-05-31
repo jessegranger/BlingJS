@@ -2,8 +2,6 @@ $.plugin
 	provides: 'Trie'
 , -> # Trie plugin
 
-	lc = (c) -> c.toLowerCase()
-
 	class Trie
 		constructor: ->
 			@length = 0
