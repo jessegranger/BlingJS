@@ -1,22 +1,21 @@
-Object.keys or= (o) -> (k for k of o)
-Object.values or= (o) -> (o[k] for k of o)
-extend = (a, b...) ->
+Object.keys or= (o) => (k for k of o)
+Object.values or= (o) => (o[k] for k of o)
+extend = (a, b...) =>
 	for obj in b when obj
 		a[k] = v for k,v of obj 
 	a
-class Bling extends Array
+Bling = (args...) ->
 	"Bling:nomunge"
-	constructor: (args...) ->
-		if args.length is 1 
-			args = $.type.lookup(args[0]).array(args[0])
-		b = $.inherit Bling, args
-		if args.length is 0 and args[0] isnt undefined
-			i = 0
-			i++ while args[i] isnt undefined
-			b.length = i
-		if 'init' of Bling 
-			return Bling.init(b)
-		return b
+	if args.length is 1 
+		args = $.type.lookup(args[0]).array(args[0])
+	b = $.inherit Bling, args
+	if args.length is 0 and args[0] isnt undefined
+		i = 0
+		i++ while args[i] isnt undefined
+		b.length = i
+	if 'init' of Bling 
+		return Bling.init(b)
+	return b
 $ = Bling
 $.global = do -> @
 $.plugin = (opts, constructor) ->
@@ -440,7 +439,7 @@ $.plugin
 		when 0 then $.extend {}, process.env
 		else process.env[name] ? def
 	set = (name, val) -> switch arguments.length
-		when 1 then $.extend process.env, arguments[0]
+		when 1 then $.extend process.env, name
 		when 2 then process.env[name] = val
 	parse = (data) ->
 		ret = {}
@@ -458,7 +457,9 @@ $.plugin
 			if (cur = process.env[name]) isnt prev
 				func prev, cur
 				prev = cur
-	$: config: $.extend get, {get, set, parse, watch}
+	int = (name, def) -> parseInt(process.env[name] ? def, 10)
+	float = (name, def) -> parseFloat(process.env[name] ? def)
+	$: config: $.extend get, {get, set, parse, watch, int, float}
 $.plugin
 	provides: "core,eq,each,map,filterMap,tap,replaceWith,reduce,union,intersect,distinct," +
 		"contains,count,coalesce,swap,shuffle,select,or,zap,clean,take,skip,first,last,slice," +
@@ -478,8 +479,9 @@ $.plugin
 			keysOf: (o, own=false) ->
 				if own then $(k for own k of o)
 				else $(k for k of o)
-			valuesOf: (o, own=false) -> $.keysOf(o, own).map (k)->
-				return try o[k] catch err then err
+			valuesOf: (o, own=false) ->
+				if own then $(v for own k,v of o)
+				else $(v for k,v of o)
 		eq: (i) -> $([@[index i, @]])
 		each: (f) -> (f.call(t,t) for t in @); @
 		map: (f) ->
@@ -941,7 +943,7 @@ $.plugin
 		return message + "\n" + $.weave(files, lines).filter(null, false).join "\n"
 	protoChain = (obj, arr) ->
 		return arr unless obj and obj.constructor
-		return protoChain(obj.constructor.__super__, arr.push obj.constructor)
+		return protoChain obj.__proto__, arr.push obj.constructor
 	return $: {
 		debugStack: (error, node_modules=false) ->
 			stack = switch
@@ -949,7 +951,7 @@ $.plugin
 				when $.is 'string', error then error
 				else String(error)
 			explodeStack stack, node_modules
-		protoChain: (o) -> protoChain(o, $())
+		protoChain: (o) -> protoChain(o.__proto__, $())
 	}
 $.plugin
 	provides: "delay,immediate,interval"
@@ -1362,18 +1364,21 @@ $.plugin
 	provides: "EventEmitter"
 	depends: "type,hook"
 , ->
-	$: EventEmitter: $.init.append (obj = {}) ->
+	$: EventEmitter: $.init.append (obj) ->
+		if obj in [$.global, null, undefined]
+			if this in [$.global, $]
+				obj = {}
+			else obj = this
 		listeners = Object.create null
 		list = (e) -> (listeners[e] or= [])
-		$.inherit {
+		return $.inherit {
 			emit:               (e, a...) -> (f.apply(@, a) for f in list(e)); @
 			on: add = (e, f) ->
-				switch $.type e
-					when 'object' then @addListener(k,v) for k,v of e
-					when 'string'
-						list(e).push(f)
-						@emit('newListener', e, f)
-				return @
+				('string' is typeof e) and \
+					list(e).push(f)
+				('object' is typeof e) and \
+					@addListener(k,v) for k,v of e
+				@
 			addListener: add
 			removeListener:     (e, f) -> (l.splice i, 1) if (i = (l = list e).indexOf f) > -1
 			removeAllListeners: (e) -> listeners[e] = []
@@ -1689,6 +1694,9 @@ $.plugin
 								opts.error xhr.status, xhr.statusText
 				for k,v of opts.headers
 					xhr.setRequestHeader k, v
+				try xhr.addEventListener "progress", (evt) =>
+					$.log("xhr progress event", evt.loaded, evt.total)
+					result.emit('progress', evt.loaded, evt.total)
 				xhr.send opts.data
 				return $.extend result, cancel: -> xhr.cancel()
 			post: (url, opts = {}) ->
@@ -1722,10 +1730,11 @@ $.depends 'hook', ->
 				for keyMaker in keyMakers
 					_map = map.get keyMaker
 					if _map.has key = keyMaker criteria
-						return _map.get(key)
-				return $()
+						for item in _map.get(key)
+							return if (yield item) is false
+				null
 			queryOne: (criteria) ->
-				return @query(criteria)[0]
+				@query(criteria).next().value
 		}, obj
 $.plugin
 	provides: "toHTML"
@@ -2068,7 +2077,12 @@ $.plugin
 	provides: "promise"
 , ->
 	class NoValue 
-	Promise = (obj = {}) ->
+	Promise = (obj) ->
+		if obj in [$.global, null, undefined]
+			if this is $
+				obj = {}
+			else
+				obj = this
 		waiting = []
 		err = result = NoValue
 		consume_all = (e, v) ->
@@ -2107,16 +2121,16 @@ $.plugin
 				if $.is "function", timeout
 					[cb, timeout] = [timeout, Infinity]
 				if err isnt NoValue
-					$.immediate -> consume_one cb, err, null
+					$.immediate => consume_one cb, err, null
 				else if result isnt NoValue
-					$.immediate -> consume_one cb, null, result
+					$.immediate => consume_one cb, null, result
 				else 
 					waiting.push cb 
 					if isFinite parseFloat timeout
-						cb.timeout = $.delay timeout, ->
+						cb.timeout = $.delay timeout, =>
 							if (i = waiting.indexOf cb) > -1
 								waiting.splice i, 1
-								consume_one cb, err = new Error('timeout'), undefined
+								consume_one cb, (err = new Error 'timeout'), undefined
 				@
 			then: (f, e) -> @wait (err, x) ->
 				if err then e?(err)
@@ -2347,9 +2361,13 @@ $.plugin
 				if (i = a.indexOf func)  > -1
 					a.splice i,1
 			func
-	return {
-		$: $.extend new Hub(), { Hub }
-	}
+	ret = { $: { Hub } }
+	rootHub = new Hub()
+	for name,prop of Object.getOwnPropertyDescriptors(Hub.prototype)
+		continue if name is 'constructor'
+		if "function" is typeof prop.value
+			ret.$[name] = prop.value.bind rootHub
+	return ret
 $.plugin
 	provides: 'random'
 	depends: 'type'
@@ -2560,8 +2578,7 @@ $.plugin
 	_callAll = (f, c, arg) ->
 		while (typeof f) is "function"
 			f = f.call c, arg
-		if $.is 'number', f
-			c.state = f	
+		c.state = f
 	keyEscapes =
 		"\n": "n"
 		"\r": "r"
@@ -2576,23 +2593,36 @@ $.plugin
 	
 	log = $.logger "[StateMachine]"
 	$: StateMachine: class StateMachine 
+		@extractCode = (f, priorText='') -> 
+			return "" unless f?
+			s = f.toString() \
+				.replace(/^\s+/,"") \
+				.replace(/\r/g, "##R##") \
+				.replace(/\n/g, "##N##") \
+				.replace(/\/\*(.*)\*\//g, "") \
+				.replace(/\/\/(.*)(##N##|##R##)*/g,"")
+			if s.indexOf("function") is 0
+				s = s.replace(/function [^{]+ *{\s*/,priorText)
+			else if /\([^{]+ *=>\s*{/.test s
+				s = s.replace(/\([^{]+ *{\s*/,priorText)
+			return s \
+				.replace(/return ([^;]+),(\d+)/, '$1;s=$2') \
+				.replace('return ', 's = ') \
+				.replace(/\s*}$/,'') \
+				.replace(/;*(##N##|##R##)\s*/g,';') \
+				.replace(/##R##/g, "\r") \
+				.replace(/##N##/g, "\n") \
+				.replace(/^\s+/,"") \
+				.replace(/\s+$/,"") \
+				? ""
 		constructor: (table, debug=false) ->
 			parse = null
 			trace = debug and "$.log('state:',s,'i:',i,'c:',c);" or ""
-			extractCode = (f, priorText='') -> 
-				code = f?.toString()
-					.replace(/function [^{]+ *{\s*/,priorText)
-					.replace(/return ([^;]+),(\d+)/, '$1;s=$2') 
-					.replace('return ', 's = ')
-					.replace(/\s*}$/,'')
-					.replace(/;*\n\s*/g,';')
-				code ? ""
 			ret = "s=s|0;for(i=i|0;i<=d.length;i++){c=d[i]||'eof';#{trace}switch(s){"
 			for state,rules of table 
 				if 'enter' of rules 
 					priorText = 'p=s;'
-					onEnter = extractCode(rules.enter, priorText)
-					$.log "extractCode from", rules.enter, " OUTPUT: ", onEnter
+					onEnter = StateMachine.extractCode(rules.enter, priorText)
 					onEnter = "if(s!==p){#{onEnter};if(s!==p){i--;break}}"
 				else
 					onEnter = ""
@@ -2603,7 +2633,7 @@ $.plugin
 					"case #{state}:#{onEnter}switch(c){"
 				for _c,_code of rules
 					continue if _c is 'enter' 
-					_code = extractCode(_code, priorText).replace(/\r|\n/g,'') + ";break;"
+					_code = StateMachine.extractCode(_code, priorText).replace(/\r|\n/g,'') + ";break;"
 					ret += switch _c
 						when 'def' then "default:#{_code}"
 						else            "case '#{escapeAsKey _c}':#{_code}"
@@ -2831,44 +2861,45 @@ $.plugin
 		no_eof =
 			eof: -> @emitError("Unexpected end of input")
 		
-		o = (a...) -> $.extend a...
-		constructor: (debug) ->
-			debug = true
+		rule = (a...) -> $.extend a...
+		constructor: (debug=false) ->
 			super [
 				enter:   ->
 						@tag = @id = @cls = @attr = @val = @text = ""
 						@attrs = {}
 						1
-				o { def: (c) ->  @tag += c; 1 }, common
-				o { def: (c) ->  @id += c; 2 }, common
-				o { def: (c) ->  @cls += c; 3 }, common,
+				rule { def: (c) ->  @tag += c; 1 }, common
+				rule { def: (c) ->  @id += c; 2 }, common
+				rule { def: (c) ->  @cls += c; 3 }, common,
 					enter: -> @cls += (@cls.length and " " or ""); 3
 					".":   -> @cls += " "; 3
-				o { def: (c) ->  @attr += c; 4 }, no_eof,
+				rule { def: (c) ->  @attr += c; 4 }, no_eof,
 					"=":   -> 5
 					"]":   -> @attrs[@attr] = @val; @attr = @val = ""; 1
-				o { def: (c) ->  @val += c; 5 }, no_eof,
+				rule { def: (c) ->  @val += c; 5 }, no_eof,
 					"]":   -> @attrs[@attr] = @val; @attr = @val = ""; 1
-				o { def: (c) ->  @text += c; 6 }, no_eof,
+				rule { def: (c) ->  @text += c; 6 }, no_eof,
 					'\\':  -> 8
 					'"':   -> @emitText()
-				o { def: (c) ->  @text += c; 7 }, no_eof,
+				rule { def: (c) ->  @text += c; 7 }, no_eof,
 					'\\':  -> 9
 					"'":   -> @emitText()
-				o { def: (c) ->  @text += c; 6 }, no_eof
-				o { def: (c) ->  @text += c; 7 }, no_eof
+				rule { def: (c) ->  @text += c; 6 }, no_eof
+				rule { def: (c) ->  @text += c; 7 }, no_eof
 			], debug
 			@reset()
 		reset: ->
 			@fragment = @cursor = document.createDocumentFragment()
 			@tag = @id = @cls = @attr = @val = @text = ""
 			@attrs = {}
+			@
 		emitError: (msg) -> throw new Error "#{msg}: #{@input}"
 		emitNodeAndReparent: (nextCursor) ->
-			if @tag
-				@cursor.appendChild node = $.extend document.createElement(@tag)
-				@id not in ["",null,undefined] and node.id = @id
-				@cls not in ["",null,undefined] and node.className = @cls
+			if @tag?.length > 0
+				node = document.createElement @tag
+				@id?.length > 0 and node.id = @id
+				@cls?.length > 0 and node.className = @cls
+				@cursor.appendChild node
 				node.setAttribute(k, v) for k,v of @attrs
 			@cursor = node and (nextCursor or node) or (nextCursor or @cursor)
 			0
@@ -2880,14 +2911,9 @@ $.plugin
 				or @text = ""
 			0
 	machine = new SynthMachine()
-	return {
-		$:
-			synth: (expr) ->
-				machine.reset()
-				machine.run(expr)
-				$ if machine.fragment.childNodes.length is 1 then machine.fragment.childNodes[0]
-				else machine.fragment
-	}
+	return $: synth: (expr) ->
+		f = machine.reset().run(expr, 0).fragment
+		return $(if f.childNodes.length is 1 then f.childNodes[0] else f)
 $.plugin
 	depends: "StateMachine, function"
 	provides: "template"
@@ -3111,11 +3137,24 @@ $.plugin
 				[name, rest] = unpackOne(s)
 				[args, rest] = unpackOne(rest)
 				[body, rest] = unpackOne(rest)
-				return makeFunction name, args.join(), body
+				try return makeFunction name, args.join(), body
+				catch err
+					$.log "Failed to makeFunction."
+					$.log "Arguments:", args.join()
+					$.log "Body:", body
 		"regexp":
 			symbol: "/"
 			pack: (r) -> String(r).slice(1,-1)
 			unpack: (s) -> RegExp(s)
+		"class":
+			symbol: "{"
+			pack: (o) ->
+				return [ Types.function.pack(o), packOne( o.prototype, "object" ) ].join ''
+			unpack: (s) ->
+				[s, rest] = unpackOne s
+				f = eval s
+				[f.prototype, rest] = unpackOne rest
+				f
 		"class instance":
 			symbol: "C"
 			pack: (o) ->
@@ -3361,6 +3400,34 @@ $.plugin
 		fadeDown: (speed, callback)  -> @fadeOut speed, callback, 0.0, @height().first()
 	}
 $.plugin
+	provides: 'Trie'
+, -> 
+	class Trie
+		constructor: ->
+			@length = 0
+		insert: (item, key=String item) -> return insert @, item, key.toLowerCase(), 0
+		insert = (t, item, key, n) ->
+			t.length++
+			if n < key.length
+				o = t.children or= {}
+				insert (o[key[n]] or= new Trie),
+					item, key, n+1
+			else
+				(t.values or= []).push item
+			t
+		find: (prefix) -> return find @, prefix.toLowerCase(), 0
+		find = (t, k, n) ->
+			end = n >= k.length
+			if end and t.values
+				for v in t.values
+					break if (yield v) is false
+			else for c,child of t.children
+				if end or c is k[n]
+					`yield* find(child,k,n+1)`
+			null	
+	
+	return { $: { Trie } }
+$.plugin
 	provides: "type,is,inherit,extend,defineProperty,isType,are,as,isSimple,isDefined,isEmpty"
 	depends: "compat"
 , ->
@@ -3427,6 +3494,7 @@ $.plugin
 		register "number",    is: (o) -> typeof o is "number" and not isNaN(o)
 		register "bool",      is: (o) -> typeof o is "boolean" 
 		register "function",  is: (o) -> typeof o is "function"
+		register "class",     is: (o) -> typeof o is "function" and ('prototype' of (props = Object.getOwnPropertyDescriptors o)) and not ('arguments' of props)
 		register "global",    is: (o) -> typeof o is "object" and 'setInterval' of o
 		register "arguments", is: (o) -> typeof o is "object" and 'callee' of o and 'length' of o
 		register "undefined", is: (x) -> x is undefined
