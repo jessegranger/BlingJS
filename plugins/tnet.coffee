@@ -113,10 +113,12 @@ $.plugin
 		"class":
 			symbol: "{"
 			pack: (o) ->
-				packOne ($.compress o.toString()), "string"
+				return [ Types.function.pack(o), packOne( o.prototype, "object" ) ].join ''
 			unpack: (s) ->
 				[s, rest] = unpackOne s
-				return eval $.decompress s
+				f = eval s
+				[f.prototype, rest] = unpackOne rest
+				f
 		"class instance":
 			symbol: "C"
 			pack: (o) ->
