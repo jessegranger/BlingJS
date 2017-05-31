@@ -6,7 +6,7 @@ JLDOM=node_modules/jldom
 
 MOCHA=node_modules/.bin/mocha
 MOCHA_FMT?=dot
-MOCHA_OPTS=--compilers coffee:coffeescript/register \
+MOCHA_OPTS=--compilers coffee:coffee-script/register \
 	--globals document,window,Bling,$$,_ \
 	-R ${MOCHA_FMT} \
 	-s 500 \
@@ -51,7 +51,7 @@ site: dist/bling.js test $(UGLIFY)
 	@git show master:doc/index.html > doc/index.html
 	# Minify and compress...
 	@(cd js \
-		&& ../$(UGLIFY) bling.js -c --source-map bling.min.js.map --in-source-map bling.js.map  -m -r '$,Bling,window,document' --screw-ie8 -o bling.min.js \
+		&& ../$(UGLIFY) bling.js -c -m -r '$,Bling,window,document' --screw-ie8 -o bling.min.js \
 		&& (gzip -f9c bling.min.js > bling.min.js.gz)) > /dev/null
 	# Commit to site branch...
 	@git add -f js/bling* js/package.json doc/* &> /dev/null
@@ -73,9 +73,7 @@ dist/bling.coffee: bling.coffee $(shell ls plugins/*.coffee | sort -f)
 
 dist/bling.min.js: dist/bling.js $(UGLIFY)
 		(cd dist && \
-			../$(UGLIFY) bling.js -c --source-map bling.min.js.map \
-				--in-source-map bling.js.map \
-				-m -r '$,Bling,window,document' \
+			../$(UGLIFY) bling.js -c -m -r '$,Bling,window,document' \
 				--screw-ie8 -o bling.min.js)
 
 clean:
