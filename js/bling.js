@@ -3346,6 +3346,82 @@
     };
   });
 
+  $.plugin(function() {
+    var select;
+    Object.assign(((function*() {
+      return (yield);
+    })()).constructor.prototype, {
+      toArray: function() {
+        var ref, results, x;
+        ref = this;
+        results = [];
+        for (x of ref) {
+          results.push(x);
+        }
+        return results;
+      },
+      skip: function(n) {
+        var i, i1, ref;
+        for (i = i1 = 0, ref = n; 0 <= ref ? i1 < ref : i1 > ref; i = 0 <= ref ? ++i1 : --i1) {
+          this.next();
+        }
+        return this;
+      },
+      limit: function*(n) {
+        var ref, x;
+        ref = this;
+        for (x of ref) {
+          if (n-- > 0) {
+            yield x;
+          } else {
+            return;
+          }
+        }
+      },
+      map: function*(f) {
+        var ref, results, x;
+        ref = this;
+        results = [];
+        for (x of ref) {
+          results.push((yield f(x)));
+        }
+        return results;
+      },
+      filter: function*(f, v) {
+        var ref, results, x;
+        if (v == null) {
+          v = true;
+        }
+        ref = this;
+        results = [];
+        for (x of ref) {
+          if (f(x) === v) {
+            results.push((yield x));
+          }
+        }
+        return results;
+      },
+      select: function*(key) {
+        var ref, results, x;
+        ref = this;
+        results = [];
+        for (x of ref) {
+          results.push((yield select(x, key)));
+        }
+        return results;
+      }
+    });
+    select = function(o, k) {
+      var i;
+      if ((i = k.indexOf('.')) > -1) {
+        return select(o[k.substr(0, i)], k.substr(i + 1));
+      } else {
+        return o[k];
+      }
+    };
+    return {};
+  });
+
   $.plugin({
     provides: "hash",
     depends: "type"
