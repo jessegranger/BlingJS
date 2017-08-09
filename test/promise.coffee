@@ -5,16 +5,6 @@ describe "$.Promise()", ->
 		it "queues a callback", (done) ->
 			$.Promise().wait((err, data) -> done(err)).resolve()
 			null
-		it "calls back in a later tick if already resolved", (done) ->
-			output = null
-			$.Promise().resolve("magic").wait (err, data) ->
-				output = data
-			# it does not fire yet
-			assert.equal output, null
-			$.delay 20, ->
-				assert.equal output, "magic"
-				done()
-			null
 	describe "resolve", ->
 		it "passes data to queued callbacks", (done) ->
 			$.Promise().wait((err, data) ->

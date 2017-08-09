@@ -59,9 +59,9 @@ $.plugin
 				if $.is "function", timeout
 					[cb, timeout] = [timeout, Infinity]
 				if err isnt NoValue
-					$.immediate => consume_one cb, err, null
+					consume_one cb, err, null
 				else if result isnt NoValue
-					$.immediate => consume_one cb, null, result
+					consume_one cb, null, result
 				else # this promise hasn't been resolved OR rejected yet
 					waiting.push cb # so save this callback for later
 					if isFinite parseFloat timeout
