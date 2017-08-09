@@ -19,6 +19,10 @@ describe "Generators", ->
 			f = ( do -> i = 0; while ++i then yield i ) # infinite generator
 			g = f.limit(10)
 			assert.deepEqual g.toArray(), [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]
+		it "does not over-limit", ->
+			f = ( do -> for i in [0...5] then yield i ) # yield 0 to 5
+			g = f.limit(10)
+			assert.deepEqual g.toArray(), [ 0, 1, 2, 3, 4 ]
 	describe "map", ->
 		it "returns a generator", ->
 			f = ( do -> i = 0; while ++i then yield i ) # infinite generator
