@@ -1,12 +1,14 @@
 $.plugin ->
+
 	# make the Generator prototype Great Again!
 	Object.assign (do -> yield).constructor.prototype, {
 		toArray: -> a = []; a.push(x) for x from this; a
-		skip: (n) -> @next() for i in [0...n]; @
+		skip: (n) -> @next() while n-- > 0; @
 		limit: (n) ->
-			for x from this
-				if n-- > 0 then yield x
-				else return
+			while n-- > 0
+				return if (next = @next()).done
+				yield next.value
+			null
 		map: (f) ->
 			yield f(x) for x from this
 			null
@@ -18,7 +20,8 @@ $.plugin ->
 			null
 	}
 	select = (o, k) ->
-		o = o[x] for x in k.split('.')
+		o = o?[x] for x in k.split('.')
 		o
-	return { }
 
+	# just return a no-op plugin because we are now automatically the best
+	return { }
