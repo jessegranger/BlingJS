@@ -31,7 +31,7 @@ $.plugin
 				.replace(/\/\*(.*)\*\//g, "") \
 				.replace(/\/\/(.*)(##N##|##R##)*/g,"")
 			if s.indexOf("function") is 0
-				s = s.replace(/function [^{]+ *{\s*/,priorText)
+				s = s.replace(/function[^{]*{\s*/,priorText)
 			else if /\([^{]+ *=>\s*{/.test s
 				s = s.replace(/\([^{]+ *{\s*/,priorText)
 			return s \
@@ -43,6 +43,7 @@ $.plugin
 				.replace(/##N##/g, "\n") \
 				.replace(/^\s+/,"") \
 				.replace(/\s+$/,"") \
+				.replace(/\r|\n/g,'') \
 				? ""
 		constructor: (table, debug=false) ->
 			parse = null
@@ -53,7 +54,6 @@ $.plugin
 					priorText = 'p=s;'
 					# it injects the onEnter code into the top of the case code
 					onEnter = StateMachine.extractCode(rules.enter, priorText)
-					# $.log "extractCode from", rules.enter, " OUTPUT: ", onEnter
 					# wrap it in a state-change detector
 					onEnter = "if(s!==p){#{onEnter};if(s!==p){i--;break}}"
 				else
@@ -61,20 +61,15 @@ $.plugin
 
 				hasRules = Object.keys(rules).length > (if 'enter' of rules then 1 else 0)
 
-				ret += unless hasRules
-					"case #{state}:#{onEnter}break;\n"
-				else
-					"case #{state}:#{onEnter}switch(c){"
+				ret += "case #{state}:#{onEnter}" \
+					+ (hasRules and "switch(c){" or "break;\n")
 
 				for _c,_code of rules
 					continue if _c is 'enter' # already handled
 					# extract the code from the state handler
-					_code = StateMachine.extractCode(_code, priorText).replace(/\r|\n/g,'') + ";break;"
-					ret += switch _c
-						when 'def' then "default:#{_code}"
-						else            "case '#{escapeAsKey _c}':#{_code}"
-				ret += hasRules \
-					and "}break;" or ""
+					ret += _c is 'def' and "default:" or "case '#{escapeAsKey _c}':"
+					ret += StateMachine.extractCode(_code, priorText) + ";break;"
+				ret += hasRules and "}break;" or ""
 			ret += "}}return this;"
 			try @run = (new Function "d", "s", "i", "p", "c", ret)
 			catch err
