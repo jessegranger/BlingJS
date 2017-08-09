@@ -3352,72 +3352,68 @@
       return (yield);
     })()).constructor.prototype, {
       toArray: function() {
-        var ref, results, x;
+        var a, ref, x;
+        a = [];
         ref = this;
-        results = [];
         for (x of ref) {
-          results.push(x);
+          a.push(x);
         }
-        return results;
+        return a;
       },
       skip: function(n) {
-        var i, i1, ref;
-        for (i = i1 = 0, ref = n; 0 <= ref ? i1 < ref : i1 > ref; i = 0 <= ref ? ++i1 : --i1) {
+        while (n-- > 0) {
           this.next();
         }
         return this;
       },
       limit: function*(n) {
+        var next;
+        while (n-- > 0) {
+          if ((next = this.next()).done) {
+            return;
+          }
+          yield next.value;
+        }
+        return null;
+      },
+      map: function*(f) {
         var ref, x;
         ref = this;
         for (x of ref) {
-          if (n-- > 0) {
-            yield x;
-          } else {
-            return;
-          }
+          yield f(x);
         }
-      },
-      map: function*(f) {
-        var ref, results, x;
-        ref = this;
-        results = [];
-        for (x of ref) {
-          results.push((yield f(x)));
-        }
-        return results;
+        return null;
       },
       filter: function*(f, v) {
-        var ref, results, x;
+        var ref, x;
         if (v == null) {
           v = true;
         }
         ref = this;
-        results = [];
         for (x of ref) {
           if (f(x) === v) {
-            results.push((yield x));
+            yield x;
           }
         }
-        return results;
+        return null;
       },
       select: function*(key) {
-        var ref, results, x;
+        var ref, x;
         ref = this;
-        results = [];
         for (x of ref) {
-          results.push((yield select(x, key)));
+          yield select(x, key);
         }
-        return results;
+        return null;
       }
     });
     select = function(o, k) {
-      var i;
-      if ((i = k.indexOf('.')) > -1) {
-        return select(o[k.substr(0, i)], k.substr(i + 1));
-      } else {
-        return o[k];
+      var i1, len1, ref, x;
+      ref = k.split('.');
+      for (i1 = 0, len1 = ref.length; i1 < len1; i1++) {
+        x = ref[i1];
+        o = o != null ? o[x] : void 0;
       }
+      return o;
     };
     return {};
   });
@@ -4610,17 +4606,9 @@
             ref = [timeout, 2e308], cb = ref[0], timeout = ref[1];
           }
           if (err !== NoValue) {
-            $.immediate((function(_this) {
-              return function() {
-                return consume_one(cb, err, null);
-              };
-            })(this));
+            consume_one(cb, err, null);
           } else if (result !== NoValue) {
-            $.immediate((function(_this) {
-              return function() {
-                return consume_one(cb, null, result);
-              };
-            })(this));
+            consume_one(cb, null, result);
           } else {
             waiting.push(cb);
             if (isFinite(parseFloat(timeout))) {
@@ -5623,11 +5611,11 @@
             }
             s = f.toString().replace(/^\s+/, "").replace(/\r/g, "##R##").replace(/\n/g, "##N##").replace(/\/\*(.*)\*\//g, "").replace(/\/\/(.*)(##N##|##R##)*/g, "");
             if (s.indexOf("function") === 0) {
-              s = s.replace(/function [^{]+ *{\s*/, priorText);
+              s = s.replace(/function[^{]*{\s*/, priorText);
             } else if (/\([^{]+ *=>\s*{/.test(s)) {
               s = s.replace(/\([^{]+ *{\s*/, priorText);
             }
-            return (ref = s.replace(/return ([^;]+),(\d+)/, '$1;s=$2').replace('return ', 's = ').replace(/\s*}$/, '').replace(/;*(##N##|##R##)\s*/g, ';').replace(/##R##/g, "\r").replace(/##N##/g, "\n").replace(/^\s+/, "").replace(/\s+$/, "")) != null ? ref : "";
+            return (ref = s.replace(/return ([^;]+),(\d+)/, '$1;s=$2').replace('return ', 's = ').replace(/\s*}$/, '').replace(/;*(##N##|##R##)\s*/g, ';').replace(/##R##/g, "\r").replace(/##N##/g, "\n").replace(/^\s+/, "").replace(/\s+$/, "").replace(/\r|\n/g, '')) != null ? ref : "";
           };
 
           function StateMachine(table, debug) {
@@ -5648,21 +5636,14 @@
                 onEnter = "";
               }
               hasRules = Object.keys(rules).length > ('enter' in rules ? 1 : 0);
-              ret += !hasRules ? "case " + state + ":" + onEnter + "break;\n" : "case " + state + ":" + onEnter + "switch(c){";
+              ret += ("case " + state + ":" + onEnter) + (hasRules && "switch(c){" || "break;\n");
               for (_c in rules) {
                 _code = rules[_c];
                 if (_c === 'enter') {
                   continue;
                 }
-                _code = StateMachine.extractCode(_code, priorText).replace(/\r|\n/g, '') + ";break;";
-                ret += (function() {
-                  switch (_c) {
-                    case 'def':
-                      return "default:" + _code;
-                    default:
-                      return "case '" + (escapeAsKey(_c)) + "':" + _code;
-                  }
-                })();
+                ret += _c === 'def' && "default:" || ("case '" + (escapeAsKey(_c)) + "':");
+                ret += StateMachine.extractCode(_code, priorText) + ";break;";
               }
               ret += hasRules && "}break;" || "";
             }

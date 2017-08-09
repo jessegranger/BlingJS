@@ -1564,21 +1564,27 @@ $.plugin
 	partial: (a...) -> @map (f) -> $.partial f, a...
 $.plugin ->
 	Object.assign (do -> yield).constructor.prototype, {
-		toArray: -> (x for x from this)
-		skip: (n) -> @next() for i in [0...n]; @
+		toArray: -> a = []; a.push(x) for x from this; a
+		skip: (n) -> @next() while n-- > 0; @
 		limit: (n) ->
-			for x from this
-				if n-- > 0 then yield x
-				else return
-		map: (f) -> yield f(x) for x from this
-		filter: (f, v=true) -> yield x for x from this when f(x) is v
+			while n-- > 0
+				return if (next = @next()).done
+				yield next.value
+			null
+		map: (f) ->
+			yield f(x) for x from this
+			null
+		filter: (f, v=true) ->
+			yield x for x from this when f(x) is v
+			null
 		select: (key) ->
 			yield select(x, key) for x from this
+			null
 	}
 	select = (o, k) ->
-		if (i = k.indexOf '.') > -1 then select o[k.substr 0, i], k.substr i+1
-		else o[k]
-	return {}
+		o = o?[x] for x in k.split('.')
+		o
+	return { }
 $.plugin
 	provides: "hash"
 	depends: "type"
@@ -2138,9 +2144,9 @@ $.plugin
 				if $.is "function", timeout
 					[cb, timeout] = [timeout, Infinity]
 				if err isnt NoValue
-					$.immediate => consume_one cb, err, null
+					consume_one cb, err, null
 				else if result isnt NoValue
-					$.immediate => consume_one cb, null, result
+					consume_one cb, null, result
 				else 
 					waiting.push cb 
 					if isFinite parseFloat timeout
@@ -2619,7 +2625,7 @@ $.plugin
 				.replace(/\/\*(.*)\*\//g, "") \
 				.replace(/\/\/(.*)(##N##|##R##)*/g,"")
 			if s.indexOf("function") is 0
-				s = s.replace(/function [^{]+ *{\s*/,priorText)
+				s = s.replace(/function[^{]*{\s*/,priorText)
 			else if /\([^{]+ *=>\s*{/.test s
 				s = s.replace(/\([^{]+ *{\s*/,priorText)
 			return s \
@@ -2631,6 +2637,7 @@ $.plugin
 				.replace(/##N##/g, "\n") \
 				.replace(/^\s+/,"") \
 				.replace(/\s+$/,"") \
+				.replace(/\r|\n/g,'') \
 				? ""
 		constructor: (table, debug=false) ->
 			parse = null
@@ -2644,18 +2651,13 @@ $.plugin
 				else
 					onEnter = ""
 				hasRules = Object.keys(rules).length > (if 'enter' of rules then 1 else 0)
-				ret += unless hasRules
-					"case #{state}:#{onEnter}break;\n"
-				else
-					"case #{state}:#{onEnter}switch(c){"
+				ret += "case #{state}:#{onEnter}" \
+					+ (hasRules and "switch(c){" or "break;\n")
 				for _c,_code of rules
 					continue if _c is 'enter' 
-					_code = StateMachine.extractCode(_code, priorText).replace(/\r|\n/g,'') + ";break;"
-					ret += switch _c
-						when 'def' then "default:#{_code}"
-						else            "case '#{escapeAsKey _c}':#{_code}"
-				ret += hasRules \
-					and "}break;" or ""
+					ret += _c is 'def' and "default:" or "case '#{escapeAsKey _c}':"
+					ret += StateMachine.extractCode(_code, priorText) + ";break;"
+				ret += hasRules and "}break;" or ""
 			ret += "}}return this;"
 			try @run = (new Function "d", "s", "i", "p", "c", ret)
 			catch err
@@ -2889,17 +2891,17 @@ $.plugin
 				rule { def: (c) ->  @id += c; 2 }, common
 				rule { def: (c) ->  @cls += c; 3 }, common,
 					enter: -> @cls += (@cls.length and " " or ""); 3
-					".":   -> @cls += " "; 3
+					".":   -> @cls += " "; 3 
 				rule { def: (c) ->  @attr += c; 4 }, no_eof,
 					"=":   -> 5
 					"]":   -> @attrs[@attr] = @val; @attr = @val = ""; 1
 				rule { def: (c) ->  @val += c; 5 }, no_eof,
 					"]":   -> @attrs[@attr] = @val; @attr = @val = ""; 1
 				rule { def: (c) ->  @text += c; 6 }, no_eof,
-					'\\':  -> 8
+					'\\':  -> 8 
 					'"':   -> @emitText()
 				rule { def: (c) ->  @text += c; 7 }, no_eof,
-					'\\':  -> 9
+					'\\':  -> 9 
 					"'":   -> @emitText()
 				rule { def: (c) ->  @text += c; 6 }, no_eof
 				rule { def: (c) ->  @text += c; 7 }, no_eof
