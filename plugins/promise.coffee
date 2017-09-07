@@ -47,7 +47,7 @@ $.plugin
 					when value is @
 						return end new TypeError "cant resolve a promise with itself"
 					# but, you can resolve one promise with another:
-					when value.then? and value.catch? # new ES6 Promise objects
+					when value? and value.then and value.catch # new ES6 Promise objects
 						value.then (x) -> end null, x
 						value.catch (e) -> end e, null
 					when $.is 'promise', value then value.wait end # our internal Promise object
