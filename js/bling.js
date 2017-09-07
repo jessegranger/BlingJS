@@ -4585,6 +4585,14 @@
             switch (true) {
               case value === _this:
                 return end(new TypeError("cant resolve a promise with itself"));
+              case (value != null) && value.then && value["catch"]:
+                value.then(function(x) {
+                  return end(null, x);
+                });
+                value["catch"](function(e) {
+                  return end(e, null);
+                });
+                break;
               case $.is('promise', value):
                 value.wait(end);
                 break;

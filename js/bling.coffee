@@ -2134,7 +2134,10 @@ $.plugin
 				switch true
 					when value is @
 						return end new TypeError "cant resolve a promise with itself"
-					when $.is 'promise', value then value.wait end
+					when value? and value.then and value.catch 
+						value.then (x) -> end null, x
+						value.catch (e) -> end e, null
+					when $.is 'promise', value then value.wait end 
 					when error isnt NoValue then consume_all err, null
 					when value isnt NoValue then consume_all null, result
 			return @
