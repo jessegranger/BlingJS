@@ -1510,17 +1510,16 @@ $.plugin
 					catch err then $.log "dispatchEvent error:", err
 			@
 		delegate: (selector, e, f) ->
-			h = (evt) => 
-				t = $(evt.target)
-				@find(selector)
-					.intersect(t.parents().first().union t)
-					.each -> f.call evt.target = @, evt
+			h = (evt) -> 
+				$(evt.target).parents().first().push(evt.target) 
+					.filter(selector).each (real_target) -> 
+						f.call evt.target = real_target, evt 
 			@bind(e, h) 
-				.each -> _get(@,'__alive__',selector,e)[f] = h 
+				.each -> _get(@,'__delegates__',selector,e)[f] = h 
 		undelegate: (selector, e, f) ->
 			context = @
 			context.each ->
-				c = _get(@,'__alive__',selector,e) 
+				c = _get(@,'__delegates__',selector,e) 
 				if c and c[f]
 					context.unbind e, c[f] 
 					delete c[f] 

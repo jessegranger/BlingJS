@@ -3202,17 +3202,13 @@
       },
       delegate: function(selector, e, f) {
         var h;
-        h = (function(_this) {
-          return function(evt) {
-            var t;
-            t = $(evt.target);
-            return _this.find(selector).intersect(t.parents().first().union(t)).each(function() {
-              return f.call(evt.target = this, evt);
-            });
-          };
-        })(this);
+        h = function(evt) {
+          return $(evt.target).parents().first().push(evt.target).filter(selector).each(function(real_target) {
+            return f.call(evt.target = real_target, evt);
+          });
+        };
         return this.bind(e, h).each(function() {
-          return _get(this, '__alive__', selector, e)[f] = h;
+          return _get(this, '__delegates__', selector, e)[f] = h;
         });
       },
       undelegate: function(selector, e, f) {
@@ -3220,7 +3216,7 @@
         context = this;
         return context.each(function() {
           var c;
-          c = _get(this, '__alive__', selector, e);
+          c = _get(this, '__delegates__', selector, e);
           if (c && c[f]) {
             context.unbind(e, c[f]);
             return delete c[f];
