@@ -159,19 +159,16 @@ $.plugin
 
 		# __.delegate(selector, e, f)__ bind _f_ to handle event _e_ for child nodes that will exist in the future
 		delegate: (selector, e, f) ->
-			h = (evt) => # Create the delegate handler
-				t = $(evt.target)
-				@find(selector)
-					# See if the event would bubble up into a match.
-					.intersect(t.parents().first().union t)
-					# Then fire the real _f_ on the nodes that really matched.
-					.each -> f.call evt.target = @, evt
+			h = (evt) -> # When a real event bubbles up to us 
+				$(evt.target).parents().first().push(evt.target) # Find all the targets (the stack of parents)
+					.filter(selector).each (real_target) -> # Find all the matches
+						f.call evt.target = real_target, evt # Fire an event for each match
 			@bind(e, h) # Bind the delegate handler
-				.each -> _get(@,'__alive__',selector,e)[f] = h # Save a reference for undelegate
+				.each -> _get(@,'__delegates__',selector,e)[f] = h # Save a reference for undelegate
 		undelegate: (selector, e, f) ->
 			context = @
 			context.each ->
-				c = _get(@,'__alive__',selector,e) # Find the saved reference to h
+				c = _get(@,'__delegates__',selector,e) # Find the saved reference to h
 				if c and c[f]
 					context.unbind e, c[f] # Unbind h from everything in the context
 					delete c[f] # Remove the saved reference to f so we don't leak it.

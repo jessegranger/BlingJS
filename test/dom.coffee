@@ -261,6 +261,7 @@ describe "DOM", ->
 			cb = (evt) -> counter += 1
 			$("table").delegate "td.d", "dummy", cb
 			$("table td.d").trigger "dummy"
+			assert.equal counter, 1
 			$("table td").take(1).trigger "dummy"
 			assert.equal counter, 1
 			$("table td").trigger "dummy"
