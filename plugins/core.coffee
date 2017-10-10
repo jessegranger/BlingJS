@@ -286,6 +286,8 @@ $.plugin
 		# returns a reference to _this_ for chaining.
 		push: (b) -> Array.prototype.push.call(@, b); @
 
+		unshift: (b) -> Array.prototype.unshift.call(@, b); @
+
 		# Get a new set containing only items that match _f_. _f_ can be
 		# any of:
 		filter: (f, limit, positive) ->

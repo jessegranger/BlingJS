@@ -160,18 +160,17 @@ $.plugin
 		# __.delegate(selector, e, f)__ bind _f_ to handle event _e_ for child nodes that will exist in the future
 		delegate: (selector, e, f) ->
 			h = (evt) -> # When a real event bubbles up to us 
-				$(evt.target).parents().first().push(evt.target) # Find all the targets (the stack of parents)
-					.filter(selector).each (real_target) -> # Find all the matches
-						f.call evt.target = real_target, evt # Fire an event for each match
-			@bind(e, h) # Bind the delegate handler
-				.each -> _get(@,'__delegates__',selector,e)[f] = h # Save a reference for undelegate
+				if t = $(evt.target).parents()[0]?.unshift(evt.target).filter(selector)[0]
+					f.call (evt.target = t), evt
+			for node in @bind(e, h) # Bind the delegate handler
+				_get(node,'__delegates__',selector,e)[f] = h # Save a reference for undelegate
+			@
 		undelegate: (selector, e, f) ->
-			context = @
-			context.each ->
-				c = _get(@,'__delegates__',selector,e) # Find the saved reference to h
-				if c and c[f]
-					context.unbind e, c[f] # Unbind h from everything in the context
-					delete c[f] # Remove the saved reference to f so we don't leak it.
+			for node in @
+				h = _get(node,'__delegates__',selector,e) # Find the saved reference to h
+				if h and h[f]
+					@unbind e, h[f] # Unbind h from everything in the context
+					delete h[f] # Remove the saved reference to f so we don't leak it.
 
 		# __.click([f])__ triggers the 'click' event but also sets a
 		# default clickable appearance.
