@@ -16,11 +16,12 @@ $.plugin ->
 			yield x for x from this when f(x) is v
 			null
 		select: (key) ->
+			key = key.split '.'
 			yield select(x, key) for x from this
 			null
 	}
 	select = (o, k) ->
-		o = o?[x] for x in k.split('.')
+		o = o?[x] for x in k
 		o
 
 	# just return a no-op plugin because we are now automatically the best
