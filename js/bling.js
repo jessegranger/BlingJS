@@ -1402,6 +1402,10 @@
         Array.prototype.push.call(this, b);
         return this;
       },
+      unshift: function(b) {
+        Array.prototype.unshift.call(this, b);
+        return this;
+      },
       filter: function(f, limit, positive) {
         var a, g, i1, it, len1, ref, ref1, ref2;
         if ($.is("bool", limit)) {
@@ -3201,27 +3205,35 @@
         return this;
       },
       delegate: function(selector, e, f) {
-        var h;
+        var h, i1, len1, node, ref;
         h = function(evt) {
-          return $(evt.target).parents().first().push(evt.target).filter(selector).each(function(real_target) {
-            return f.call(evt.target = real_target, evt);
-          });
+          var ref, t;
+          if (t = (ref = $(evt.target).parents()[0]) != null ? ref.unshift(evt.target).filter(selector)[0] : void 0) {
+            return f.call((evt.target = t), evt);
+          }
         };
-        return this.bind(e, h).each(function() {
-          return _get(this, '__delegates__', selector, e)[f] = h;
-        });
+        ref = this.bind(e, h);
+        for (i1 = 0, len1 = ref.length; i1 < len1; i1++) {
+          node = ref[i1];
+          _get(node, '__delegates__', selector, e)[f] = h;
+        }
+        return this;
       },
       undelegate: function(selector, e, f) {
-        var context;
-        context = this;
-        return context.each(function() {
-          var c;
-          c = _get(this, '__delegates__', selector, e);
-          if (c && c[f]) {
-            context.unbind(e, c[f]);
-            return delete c[f];
+        var h, i1, len1, node, ref, results;
+        ref = this;
+        results = [];
+        for (i1 = 0, len1 = ref.length; i1 < len1; i1++) {
+          node = ref[i1];
+          h = _get(node, '__delegates__', selector, e);
+          if (h && h[f]) {
+            this.unbind(e, h[f]);
+            results.push(delete h[f]);
+          } else {
+            results.push(void 0);
           }
-        });
+        }
+        return results;
       },
       click: function(f) {
         var ref;
@@ -3395,6 +3407,7 @@
       },
       select: function*(key) {
         var ref, x;
+        key = key.split('.');
         ref = this;
         for (x of ref) {
           yield select(x, key);
@@ -3403,10 +3416,9 @@
       }
     });
     select = function(o, k) {
-      var i1, len1, ref, x;
-      ref = k.split('.');
-      for (i1 = 0, len1 = ref.length; i1 < len1; i1++) {
-        x = ref[i1];
+      var i1, len1, x;
+      for (i1 = 0, len1 = k.length; i1 < len1; i1++) {
+        x = k[i1];
         o = o != null ? o[x] : void 0;
       }
       return o;
@@ -3529,7 +3541,9 @@
             end = (n + 1) * bucket_width;
             pct = buckets[n] * 100 / sum;
             pct_sum += pct;
-            ret += $.padLeft(pct_sum.toFixed(2) + "%", 7) + $.padRight(" < " + (end.toFixed(2)), 10) + ": " + $.repeat("#", buckets[n]) + "\n";
+            if (pct_sum > 0) {
+              ret += $.padLeft(pct_sum.toFixed(2) + "%", 7) + $.padRight(" < " + (end.toFixed(2)), 10) + ": " + $.repeat("#", buckets[n]) + "\n";
+            }
           }
           return ret + ("N: " + data.length + " Min: " + (min.toFixed(2)) + " Max: " + (max.toFixed(2)) + " Mean: " + (mean.toFixed(2)));
         }

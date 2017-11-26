@@ -627,6 +627,7 @@ $.plugin
 			$( @[i] for i in [start...end] )
 		extend: (b) -> @.push(i) for i in b; @
 		push: (b) -> Array.prototype.push.call(@, b); @
+		unshift: (b) -> Array.prototype.unshift.call(@, b); @
 		filter: (f, limit, positive) ->
 			if $.is "bool", limit
 				[positive, limit] = [limit, positive]
@@ -1511,18 +1512,17 @@ $.plugin
 			@
 		delegate: (selector, e, f) ->
 			h = (evt) -> 
-				$(evt.target).parents().first().push(evt.target) 
-					.filter(selector).each (real_target) -> 
-						f.call evt.target = real_target, evt 
-			@bind(e, h) 
-				.each -> _get(@,'__delegates__',selector,e)[f] = h 
+				if t = $(evt.target).parents()[0]?.unshift(evt.target).filter(selector)[0]
+					f.call (evt.target = t), evt
+			for node in @bind(e, h) 
+				_get(node,'__delegates__',selector,e)[f] = h 
+			@
 		undelegate: (selector, e, f) ->
-			context = @
-			context.each ->
-				c = _get(@,'__delegates__',selector,e) 
-				if c and c[f]
-					context.unbind e, c[f] 
-					delete c[f] 
+			for node in @
+				h = _get(node,'__delegates__',selector,e) 
+				if h and h[f]
+					@unbind e, h[f] 
+					delete h[f] 
 		click: (f = {}) ->
 			if @css("cursor") in ["auto",""]
 				@css "cursor", "pointer"
@@ -1577,11 +1577,12 @@ $.plugin ->
 			yield x for x from this when f(x) is v
 			null
 		select: (key) ->
+			key = key.split '.'
 			yield select(x, key) for x from this
 			null
 	}
 	select = (o, k) ->
-		o = o?[x] for x in k.split('.')
+		o = o?[x] for x in k
 		o
 	return { }
 $.plugin
@@ -1634,9 +1635,10 @@ $.plugin ->
 				end = (n+1) * bucket_width
 				pct = (buckets[n]*100/sum)
 				pct_sum += pct
-				ret += $.padLeft(pct_sum.toFixed(2)+"%",7) +
-					$.padRight(" < #{end.toFixed(2)}", 10) +
-					": " + $.repeat("#", buckets[n]) + "\n"
+				if pct_sum > 0
+					ret += $.padLeft(pct_sum.toFixed(2)+"%",7) +
+						$.padRight(" < #{end.toFixed(2)}", 10) +
+						": " + $.repeat("#", buckets[n]) + "\n"
 			ret + "N: #{data.length} Min: #{min.toFixed(2)} Max: #{max.toFixed(2)} Mean: #{mean.toFixed(2)}"
 	histogram: -> $.histogram @
 $.plugin
