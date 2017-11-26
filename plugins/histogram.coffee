@@ -32,8 +32,9 @@ $.plugin ->
 				end = (n+1) * bucket_width
 				pct = (buckets[n]*100/sum)
 				pct_sum += pct
-				ret += $.padLeft(pct_sum.toFixed(2)+"%",7) +
-					$.padRight(" < #{end.toFixed(2)}", 10) +
-					": " + $.repeat("#", buckets[n]) + "\n"
+				if pct_sum > 0
+					ret += $.padLeft(pct_sum.toFixed(2)+"%",7) +
+						$.padRight(" < #{end.toFixed(2)}", 10) +
+						": " + $.repeat("#", buckets[n]) + "\n"
 			ret + "N: #{data.length} Min: #{min.toFixed(2)} Max: #{max.toFixed(2)} Mean: #{mean.toFixed(2)}"
 	histogram: -> $.histogram @
