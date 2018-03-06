@@ -2813,7 +2813,7 @@ $.plugin
 				return c if c.length >= n
 				s = s.split(sep) 
 				r = []
-				while n > 0
+				while n > 0 and s.length > 0
 					x = s.shift()
 					n -= x.length
 					if n >= 0
