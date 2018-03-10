@@ -74,7 +74,7 @@ $.plugin
 			ret += "}}return this;"
 			ret = ret.replace(/\s+&&\s+/g, '&&') \
 				.replace(/\s+\|\|\s+/g, '||') \
-				.replace(/\s+([+*/-]=)\s+/g, '$1')
+				.replace(/\s+([+*/=-]*=)\s+/g, '$1')
 			try @run = (new Function "d", "s", "i", "p", "c", ret)
 			catch err
 				$.log "Failed to parse compiled machine: ", ret
