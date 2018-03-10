@@ -2664,6 +2664,7 @@ $.plugin
 				.replace(/return ([^;]+),(\d+)/, '$1;s=$2') \
 				.replace('return ', 's = ') \
 				.replace(/\s*}$/,'') \
+				.replace(/([{}\[\],\\+*-]*)(##N##|##R##)\s*/g,'$1') \
 				.replace(/;*(##N##|##R##)\s*/g,';') \
 				.replace(/##R##/g, "\r") \
 				.replace(/##N##/g, "\n") \

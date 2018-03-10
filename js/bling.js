@@ -5669,7 +5669,7 @@
             } else if (/\([^{]+ *=>\s*{/.test(s)) {
               s = s.replace(/\([^{]+ *{\s*/, priorText);
             }
-            return (ref = s.replace(/return ([^;]+),(\d+)/, '$1;s=$2').replace('return ', 's = ').replace(/\s*}$/, '').replace(/;*(##N##|##R##)\s*/g, ';').replace(/##R##/g, "\r").replace(/##N##/g, "\n").replace(/^\s+/, "").replace(/\s+$/, "").replace(/\r|\n/g, '')) != null ? ref : "";
+            return (ref = s.replace(/return ([^;]+),(\d+)/, '$1;s=$2').replace('return ', 's = ').replace(/\s*}$/, '').replace(/([{}\[\],\\+*-]*)(##N##|##R##)\s*/g, '$1').replace(/;*(##N##|##R##)\s*/g, ';').replace(/##R##/g, "\r").replace(/##N##/g, "\n").replace(/^\s+/, "").replace(/\s+$/, "").replace(/\r|\n/g, '')) != null ? ref : "";
           };
 
           function StateMachine(table, debug) {
