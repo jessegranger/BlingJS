@@ -2661,10 +2661,10 @@ $.plugin
 			else if /\([^{]+ *=>\s*{/.test s
 				s = s.replace(/\([^{]+ *{\s*/,priorText)
 			return s \
-				.replace(/return ([^;]+),(\d+)/, '$1;s=$2') \
-				.replace('return ', 's = ') \
+				.replace(/return ([^;]+),(\d+)/g, '$1;s=$2') \
+				.replace(/return /g, 's=') \
 				.replace(/\s*}$/,'') \
-				.replace(/([{}\[\],\\+*-]*)(##N##|##R##)\s*/g,'$1') \
+				.replace(/([{}\[\],\\\/+*-]*)(##N##|##R##)\s*/g,'$1') \
 				.replace(/;*(##N##|##R##)\s*/g,';') \
 				.replace(/##R##/g, "\r") \
 				.replace(/##N##/g, "\n") \
@@ -2692,6 +2692,9 @@ $.plugin
 					ret += StateMachine.extractCode(_code, priorText) + ";break;"
 				ret += hasRules and "}break;" or ""
 			ret += "}}return this;"
+			ret = ret.replace(/\s+&&\s+/g, '&&') \
+				.replace(/\s+\|\|\s+/g, '||') \
+				.replace(/\s+([+*/=-]*=)\s+/g, '$1')
 			try @run = (new Function "d", "s", "i", "p", "c", ret)
 			catch err
 				$.log "Failed to parse compiled machine: ", ret
