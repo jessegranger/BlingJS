@@ -35,8 +35,8 @@ $.plugin
 			else if /\([^{]+ *=>\s*{/.test s
 				s = s.replace(/\([^{]+ *{\s*/,priorText)
 			return s \
-				.replace(/return ([^;]+),(\d+)/, '$1;s=$2') \
-				.replace('return ', 's=') \
+				.replace(/return ([^;]+),(\d+)/g, '$1;s=$2') \
+				.replace(/return /g, 's=') \
 				.replace(/\s*}$/,'') \
 				.replace(/([{}\[\],\\\/+*-]*)(##N##|##R##)\s*/g,'$1') \
 				.replace(/;*(##N##|##R##)\s*/g,';') \
