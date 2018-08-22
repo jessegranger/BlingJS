@@ -13,6 +13,9 @@ $.plugin
 	provides: "delay,immediate,interval"
 	depends: "is,select,extend,bound,core"
 , ->
+
+	u32 = (n) -> Math.min(Math.max(Math.abs(parseInt(n,10)), 1), 4294967295) # calling setTimeout(f, n) with n > 2^32 acts like n == 1 (the opposite of the intention)
+
 	$:
 		delay: do ->
 			# timeoutQueue is a private array that controls the order.
@@ -46,7 +49,7 @@ $.plugin
 						ref: -> b.select('ref').call()
 					}
 				when $.is "function", f
-					timeoutQueue.add f, parseInt(n,10)
+					timeoutQueue.add f, u32(n)
 					{
 						cancel: -> timeoutQueue.cancel(f)
 						unref: (f) -> f.timeout?.unref()
@@ -60,6 +63,7 @@ $.plugin
 			else (f) -> setTimeout(f, 0)
 		interval: (n, f) ->
 			paused = false
+			n = u32(n)
 			ret = $.delay n, g = ->
 				unless paused then do f
 				$.delay n, g
