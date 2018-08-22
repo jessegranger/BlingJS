@@ -2085,6 +2085,10 @@
     provides: "delay,immediate,interval",
     depends: "is,select,extend,bound,core"
   }, function() {
+    var u32;
+    u32 = function(n) {
+      return Math.min(Math.max(Math.abs(parseInt(n, 10)), 1), 4294967295);
+    };
     return {
       $: {
         delay: (function() {
@@ -2149,7 +2153,7 @@
                   }
                 };
               case !$.is("function", f):
-                timeoutQueue.add(f, parseInt(n, 10));
+                timeoutQueue.add(f, u32(n));
                 return {
                   cancel: function() {
                     return timeoutQueue.cancel(f);
@@ -2183,6 +2187,7 @@
         interval: function(n, f) {
           var g, paused, ret;
           paused = false;
+          n = u32(n);
           ret = $.delay(n, g = function() {
             if (!paused) {
               f();
