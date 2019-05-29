@@ -6,7 +6,8 @@ $.plugin
 			n = sets.length
 			ret = []
 			helper = (cur, i) ->
-				(return ret.push cur) if ++i >= n
+				if ++i >= n
+					return ret.push cur
 				for x in sets[i]
 					helper (cur.concat x), i
 				null
