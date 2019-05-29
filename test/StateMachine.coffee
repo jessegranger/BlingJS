@@ -3,6 +3,8 @@
 describe ".StateMachine", ->
 	it "is defined", ->
 		assert $.StateMachine?
+	it "is a function", ->
+		assert.equal (typeof $.StateMachine), 'function'
 	
 	describe ".extractCode", ->
 		test_cases = [
@@ -17,30 +19,32 @@ describe ".StateMachine", ->
 				assert.equal $.StateMachine.extractCode(eval(f)), s
 		null
 
-	it "allows subclassing to define machines", ->
-		class T extends $.StateMachine
-		t = new T
-		assert $.is 'function', t.run
 	describe ".run()", ->
-		class Capper extends $.StateMachine then constructor: -> super [
-			{ enter:   -> @output = "<<"; 1 }
-			{
-				def: (c) -> @output += c.toUpperCase(); 1
-				eof:     -> @output += ">>"
-			}
-		]
-		it "starts in state 0", ->
-			assert.equal new Capper().run(".").output, "<<.>>"
-		it "reads input and rules from @STATE_TABLE", ->
-			assert.equal new Capper().run("hello", 0).output, "<<HELLO>>"
-		describe "empty input", ->
-			class EmptyMachine extends $.StateMachine then constructor: -> super [
+		Capper = {
+			reset: -> @output = ""; Capper
+			run: $.StateMachine [
+				{ enter:   -> @output = "<<"; 1 }
 				{
-					enter: -> @enter = true; 0
-					eof:   -> @eof = true; 0
+					def: (c) -> @output += c.toUpperCase(); 1
+					eof:     -> @output += ">>"
 				}
 			]
+		}
+		it "starts in state 0", ->
+			assert.equal Capper.reset().run(".").output, "<<.>>"
+		it "reads input and rules from @STATE_TABLE", ->
+			assert.equal Capper.reset().run("hello", 0).output, "<<HELLO>>"
+		describe "empty input", ->
+			emptyMachine = {
+				reset: -> @enter = @eof = false; emptyMachine
+				run: $.StateMachine [
+					{
+						enter: -> @enter = true; 0
+						eof:   -> @eof = true; 0
+					}
+				]
+			}
 			it "triggers an eof rule in state 0", ->
-				assert new EmptyMachine().run("").eof
+				assert emptyMachine.reset().run("").eof
 			it "triggers an enter rule in state 0", ->
-				assert new EmptyMachine().run("").enter
+				assert emptyMachine.reset().run("").enter
