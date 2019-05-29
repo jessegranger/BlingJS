@@ -1,5 +1,5 @@
 $.plugin
-	depends: "StateMachine, function"
+	depends: "type, function"
 	provides: "template"
 , -> # Template plugin, pythonic style: %(value).2f
 	current_engine = null
@@ -14,13 +14,17 @@ $.plugin
 			if current_engine of engines
 				engines[current_engine](text, args)
 	}
-	template.__defineSetter__ 'engine', (v) ->
-		if not v of engines
-			throw new Error "invalid template engine: #{v} not one of #{Object.Keys(engines)}"
-		else
-			current_engine = v
-	template.__defineGetter__ 'engine', -> current_engine
-	template.__defineGetter__ 'engines', -> $.keysOf(engines)
+	$.defineProperty template, 'engine', {
+		get: -> current_engine
+		set: (v) ->
+			if not v of engines
+				throw new Error "invalid template engine: #{v} not one of #{Object.Keys(engines)}"
+			else
+				current_engine = v
+	}
+	$.defineProperty template, 'engines', {
+		get: -> $.keysOf(engines)
+	}
 
 	template.register_engine 'null', do ->
 		return $.identity
