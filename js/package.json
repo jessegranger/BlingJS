@@ -2,7 +2,7 @@
 	"author": "Jesse Granger <jesse_granger@fastmail.com>",
 	"name": "bling",
 	"description": "The kitchen sink library.",
-	"version": "0.11.11",
+	"version": "0.12.0",
 	"homepage": "http://blingjs.com",
 	"license": "MIT",
 	"main": "./dist/bling.js",
@@ -18,5 +18,6 @@
 		"jldom": "latest",
 		"mocha": "latest",
 		"uglify-es": "latest"
-	}
+	},
+	"dependencies": {}
 }

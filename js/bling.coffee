@@ -179,7 +179,8 @@ $.plugin
 			n = sets.length
 			ret = []
 			helper = (cur, i) ->
-				(return ret.push cur) if ++i >= n
+				if ++i >= n
+					return ret.push cur
 				for x in sets[i]
 					helper (cur.concat x), i
 				null
@@ -2647,60 +2648,61 @@ $.plugin
 		c of keyEscapes \
 			and "\\" + keyEscapes[c] \
 			or c
-	
 	log = $.logger "[StateMachine]"
-	$: StateMachine: class StateMachine 
-		@extractCode = (f, priorText='') -> 
-			return "" unless f?
-			s = f.toString() \
-				.replace(/^\s+/,"") \
-				.replace(/\r/g, "##R##") \
-				.replace(/\n/g, "##N##") \
-				.replace(/\/\*(.*)\*\//g, "") \
-				.replace(/\/\/(.*)(##N##|##R##)*/g,"")
-			if s.indexOf("function") is 0
-				s = s.replace(/function[^{]*{\s*/,priorText)
-			else if /\([^{]+ *=>\s*{/.test s
-				s = s.replace(/\([^{]+ *{\s*/,priorText)
-			return s \
-				.replace(/return ([^;]+),(\d+)/g, '$1;s=$2') \
-				.replace(/return /g, 's=') \
-				.replace(/\s*}$/,'') \
-				.replace(/([{}\[\],\\\/+*-]*)(##N##|##R##)\s*/g,'$1') \
-				.replace(/;*(##N##|##R##)\s*/g,';') \
-				.replace(/##R##/g, "\r") \
-				.replace(/##N##/g, "\n") \
-				.replace(/^\s+/,"") \
-				.replace(/\s+$/,"") \
-				.replace(/\r|\n/g,'') \
-				? ""
-		constructor: (table, debug=false) ->
-			parse = null
-			trace = debug and "$.log('state:',s,'i:',i,'c:',c);" or ""
-			ret = "s=s|0;for(i=i|0;i<=d.length;i++){c=d[i]||'eof';#{trace}switch(s){"
-			for state,rules of table 
-				if 'enter' of rules 
-					priorText = 'p=s;'
-					onEnter = StateMachine.extractCode(rules.enter, priorText)
-					onEnter = "if(s!==p){#{onEnter};if(s!==p){i--;break}}"
-				else
-					onEnter = ""
-				hasRules = Object.keys(rules).length > (if 'enter' of rules then 1 else 0)
-				ret += "case #{state}:#{onEnter}" \
-					+ (hasRules and "switch(c){" or "break;\n")
-				for _c,_code of rules
-					continue if _c is 'enter' 
-					ret += _c is 'def' and "default:" or "case '#{escapeAsKey _c}':"
-					ret += StateMachine.extractCode(_code, priorText) + ";break;"
-				ret += hasRules and "}break;" or ""
-			ret += "}}return this;"
-			ret = ret.replace(/\s+&&\s+/g, '&&') \
-				.replace(/\s+\|\|\s+/g, '||') \
-				.replace(/\s+([+*/=-]*=)\s+/g, '$1')
-			try @run = (new Function "d", "s", "i", "p", "c", ret)
-			catch err
-				$.log "Failed to parse compiled machine: ", ret
-				throw err
+	extractCode = (f, priorText='') ->
+		return "" unless f?
+		s = f.toString() \
+			.replace(/^\s+/,"") \
+			.replace(/\r/g, "##R##") \
+			.replace(/\n/g, "##N##") \
+			.replace(/\/\*(.*)\*\//g, "") \
+			.replace(/\/\/(.*)(##N##|##R##)*/g,"")
+		if s.indexOf("function") is 0
+			s = s.replace(/function[^{]*{\s*/,priorText)
+		else if /\([^{]+ *=>\s*{/.test s
+			s = s.replace(/\([^{]+ *{\s*/,priorText)
+		return s \
+			.replace(/return ([^;]+),(\d+)/g, '$1;s=$2') \
+			.replace(/return /g, 's=') \
+			.replace(/\s*}$/,'') \
+			.replace(/([{}\[\],\\\/+*-]*)(##N##|##R##)\s*/g,'$1') \
+			.replace(/;*(##N##|##R##)\s*/g,';') \
+			.replace(/##R##/g, "\r") \
+			.replace(/##N##/g, "\n") \
+			.replace(/^\s+/,"") \
+			.replace(/\s+$/,"") \
+			.replace(/\r|\n/g,'') \
+			? ""
+	compileStateMachine = (table, debug=false) ->
+		parse = null
+		nl = if debug then "\n" else ""
+		trace = debug and "$.log('state:',s,'i:',i,'c:',c);" or ""
+		ret = "s=s|0;for(i=i|0;i<=d.length;i++){c=d[i]||'eof';#{trace}switch(s){#{nl}"
+		for state,rules of table
+			if 'enter' of rules 
+				priorText = "p=s;#{nl}"
+				onEnter = extractCode(rules.enter, priorText)
+				onEnter = "#{nl}if(s!==p){#{onEnter};if(s!==p){i--;break}}"
+			else
+				onEnter = ""
+			hasRules = Object.keys(rules).length > (if 'enter' of rules then 1 else 0)
+			ret += "case #{state}:#{onEnter}" \
+				+ (hasRules and "switch(c){" or "break;\n")
+			for _c,_code of rules
+				continue if _c is 'enter' 
+				ret += _c is 'def' and "default:" or "case '#{escapeAsKey _c}':"
+				ret += extractCode(_code, priorText) + ";break;"
+			ret += hasRules and "}break;" or ""
+		ret += "}}return this;"
+		ret = ret.replace(/\s+&&\s+/g, '&&') \
+			.replace(/\s+\|\|\s+/g, '||') \
+			.replace(/\s+([+*/=-]*=)\s+/g, '$1')
+		try return (new Function "d", "s", "i", "p", "c", ret)
+		catch err
+			$.log "Failed to parse compiled machine: ", ret
+			throw err
+	compileStateMachine.extractCode = extractCode 
+	$: StateMachine: compileStateMachine
 $.plugin
 	provides: "string"
 	depends: "type"
@@ -2901,50 +2903,25 @@ $.plugin
 	provides: "synth"
 	depends: "StateMachine, type, dom"
 , ->
-	class SynthMachine extends $.StateMachine
-		common = 
-			"#":  -> 2
-			".":  -> 3
-			"[":  -> 4
-			'"':  -> 6
-			"'":  -> 7
-			" ":  -> @emitText()
-			"\t": -> @emitText()
-			"\n": -> @emitText()
-			"\r": -> @emitText()
-			",":  -> @emitNodeAndReparent @fragment
-			"+":  -> @emitNodeAndReparent @cursor.parentNode ? @fragment
-			eof:  -> @emitText()
-		no_eof =
-			eof: -> @emitError("Unexpected end of input")
-		
-		rule = (a...) -> $.extend a...
-		constructor: (debug=false) ->
-			super [
-				enter:   ->
-						@tag = @id = @cls = @attr = @val = @text = ""
-						@attrs = {}
-						1
-				rule { def: (c) ->  @tag += c; 1 }, common
-				rule { def: (c) ->  @id += c; 2 }, common
-				rule { def: (c) ->  @cls += c; 3 }, common,
-					enter: -> @cls += (@cls.length and " " or ""); 3
-					".":   -> @cls += " "; 3 
-				rule { def: (c) ->  @attr += c; 4 }, no_eof,
-					"=":   -> 5
-					"]":   -> @attrs[@attr] = @val; @attr = @val = ""; 1
-				rule { def: (c) ->  @val += c; 5 }, no_eof,
-					"]":   -> @attrs[@attr] = @val; @attr = @val = ""; 1
-				rule { def: (c) ->  @text += c; 6 }, no_eof,
-					'\\':  -> 8 
-					'"':   -> @emitText()
-				rule { def: (c) ->  @text += c; 7 }, no_eof,
-					'\\':  -> 9 
-					"'":   -> @emitText()
-				rule { def: (c) ->  @text += c; 6 }, no_eof
-				rule { def: (c) ->  @text += c; 7 }, no_eof
-			], debug
-			@reset()
+	common = 
+		"#":  -> 2
+		".":  -> 3
+		"[":  -> 4
+		'"':  -> 6
+		"'":  -> 7
+		" ":  -> @emitText()
+		"\t": -> @emitText()
+		"\n": -> @emitText()
+		"\r": -> @emitText()
+		",":  -> @emitNodeAndReparent @fragment
+		"+":  -> @emitNodeAndReparent @cursor.parentNode ? @fragment
+		eof:  -> @emitText()
+	no_eof =
+		eof: -> @emitError("Unexpected end of input")
+	htmlType = $.type.lookup("<html>")
+	rule = (a...) -> $.extend a...
+	
+	synthMachine = {
 		reset: ->
 			@fragment = @cursor = document.createDocumentFragment()
 			@tag = @id = @cls = @attr = @val = @text = ""
@@ -2960,19 +2937,42 @@ $.plugin
 				node.setAttribute(k, v) for k,v of @attrs
 			@cursor = node and (nextCursor or node) or (nextCursor or @cursor)
 			0
-		htmlType = $.type.lookup("<html>")
 		emitText: ->
 			@emitNodeAndReparent()
 			@text?.length \
 				and @cursor.appendChild htmlType.node(@text) \
 				or @text = ""
 			0
-	machine = new SynthMachine()
+		run: $.StateMachine [
+			enter:   ->
+					@tag = @id = @cls = @attr = @val = @text = ""
+					@attrs = {}
+					1
+			rule { def: (c) ->  @tag += c; 1 }, common
+			rule { def: (c) ->  @id += c; 2 }, common
+			rule { def: (c) ->  @cls += c; 3 }, common,
+				enter: -> @cls += (@cls.length and " " or ""); 3
+				".":   -> @cls += " "; 3 
+			rule { def: (c) ->  @attr += c; 4 }, no_eof,
+				"=":   -> 5
+				"]":   -> @attrs[@attr] = @val; @attr = @val = ""; 1
+			rule { def: (c) ->  @val += c; 5 }, no_eof,
+				"]":   -> @attrs[@attr] = @val; @attr = @val = ""; 1
+			rule { def: (c) ->  @text += c; 6 }, no_eof,
+				'\\':  -> 8 
+				'"':   -> @emitText()
+			rule { def: (c) ->  @text += c; 7 }, no_eof,
+				'\\':  -> 9 
+				"'":   -> @emitText()
+			rule { def: (c) ->  @text += c; 6 }, no_eof
+			rule { def: (c) ->  @text += c; 7 }, no_eof
+		]
+	}
 	return $: synth: (expr) ->
-		f = machine.reset().run(expr, 0).fragment
+		f = synthMachine.reset().run(expr, 0).fragment
 		return $(if f.childNodes.length is 1 then f.childNodes[0] else f)
 $.plugin
-	depends: "StateMachine, function"
+	depends: "type, function"
 	provides: "template"
 , -> 
 	current_engine = null
@@ -2986,13 +2986,17 @@ $.plugin
 			if current_engine of engines
 				engines[current_engine](text, args)
 	}
-	template.__defineSetter__ 'engine', (v) ->
-		if not v of engines
-			throw new Error "invalid template engine: #{v} not one of #{Object.Keys(engines)}"
-		else
-			current_engine = v
-	template.__defineGetter__ 'engine', -> current_engine
-	template.__defineGetter__ 'engines', -> $.keysOf(engines)
+	$.defineProperty template, 'engine', {
+		get: -> current_engine
+		set: (v) ->
+			if not v of engines
+				throw new Error "invalid template engine: #{v} not one of #{Object.Keys(engines)}"
+			else
+				current_engine = v
+	}
+	$.defineProperty template, 'engines', {
+		get: -> $.keysOf(engines)
+	}
 	template.register_engine 'null', do ->
 		return $.identity
 	match_forward = (text, find, against, start, stop = -1) ->
