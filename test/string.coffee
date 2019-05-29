@@ -63,7 +63,7 @@ describe "String plugin:", ->
 			it "blings", ->
 				assert.equal $([2,3,4]).toString(), "$([2, 3, 4])"
 			it "functions (without the code body)", ->
-				assert.equal $.toString(-> $.log), "function () { ... }"
+				assert.equal $.toString(-> $.log), "function() { ... }"
 			it "objects", ->assert.equal $.toString({a:{b:1}}), "{a:{b:1}}"
 			it "null", -> assert.equal $.toString(null), "null"
 			it "undefined", -> assert.equal $.toString(undefined), "undefined"
@@ -91,7 +91,7 @@ describe "String plugin:", ->
 				assert.equal $([null]).toRepr(), "$([null])"
 				assert.equal $([undefined]).toRepr(), "$([undefined])"
 			it "functions", ->
-				assert.equal $([(x) -> x + "a"]).toRepr().replace(/\n\s+/g,' '), '$([function (x) { return x + "a"; }])'
+				assert.equal $([(x) -> x + "a"]).toRepr().replace(/\n\s+/g,' '), '$([function(x) { return x + "a"; }])'
 			it "objects", ->
 				assert.equal $.toRepr([{a:1, b:"s", c: [1,2,3]}]), """[{"a": 1, "b": 's', "c": [1, 2, 3]}]"""
 			it "arrays", ->

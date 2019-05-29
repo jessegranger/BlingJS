@@ -38,7 +38,7 @@ describe "$.TNET", ->
 				assert.equal got.toString(), expect.toString()
 		it "can parse a Buffer:", ->
 			str = $.TNET.stringify { magic: "token" }
-			buf = new Buffer(str)
+			buf = Buffer.from(str)
 			assert.deepEqual $.TNET.parse(buf), { magic: "token" }
 	
 	describe ".parseOne()", ->
@@ -133,7 +133,7 @@ describe "$.TNET", ->
 					f.x = f
 					$.TNET.registerClass Foo
 					str = $.TNET.stringify f
-					assert.equal str, "15:1:1#8:1:x'1:0@}C"
+					assert.equal str, "15:1:2#8:1:x'1:0@}C"
 					g = $.TNET.parse str
 					assert.equal g.x, g
 

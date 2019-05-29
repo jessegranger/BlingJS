@@ -38,10 +38,10 @@ describe "Functions plugin:", ->
 			assert.equal f(4), 6
 
 	describe ".toRepr()", ->
-		assert.equal $.toRepr(-> "Hello"), 'function () {\n        return "Hello";\n      }'
+		assert.equal $.toRepr(-> "Hello"), 'function() {\n        return "Hello";\n      }'
 		describe "nested", ->
 			assert.equal $.toRepr( {
 				a: { b: "c" }
 				d: { f: -> "e" }
-			} ), '{"a": {"b": \'c\'}, "d": {"f": function () {\n              return \"e\";\n            }}}'
+			} ), '{"a": {"b": \'c\'}, "d": {"f": function() {\n              return \"e\";\n            }}}'
 
