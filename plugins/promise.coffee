@@ -3,7 +3,9 @@ $.plugin
 	depends: "core,function"
 	provides: "promise"
 , ->
+
 	class NoValue # a named totem
+
 	Promise = (obj) ->
 		if obj in [$.global, null, undefined]
 			if this is $
@@ -135,6 +137,8 @@ $.plugin
 			if e then p.reject(e) else p.resolve(r)
 		return p
 
+	# Progress is a multi-step promise, where you get notified at each step.
+	# After the final step is complete, the underlying promise is resolved.
 	Progress = (max = 1.0) ->
 		cur = 0.0
 		return ret = $.inherit {

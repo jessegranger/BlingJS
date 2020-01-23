@@ -4,7 +4,9 @@ $.plugin
 	$:
 		sortedIndex: (array, item, sorter, lo = 0, hi = array.length) ->
 			cmp = switch true
+				# if its a property name, read the property
 				when $.is "string", sorter then (a,b) -> a[sorter] < b[sorter]
+				# if its a function, sort on the return value
 				when $.is "function", sorter then (a,b) -> sorter(a) < sorter(b)
 				else (a,b) -> a < b
 			while lo < hi
