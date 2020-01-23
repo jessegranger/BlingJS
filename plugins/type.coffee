@@ -156,6 +156,7 @@ $.plugin
 		# Later, once other systems have extended the base type, the
 		# type-instance returned from type.lookup will do more.
 
+	maxHash = 0xFFFFFFFF
 	# Extending the type system
 	# First, we give the basic types the ability to turn into something
 	# array-like, for use by the constructor hook.
@@ -173,19 +174,18 @@ $.plugin
 		# Arrays just convert to themselves.
 		array:     { array: (o) -> o }
 		# Numbers create a new array of that capacity (but zero length).
-		number:    { array: (o) -> $.extend new Array(o), length: 0 }
+		number:    { array: (o) -> $.extend new Array(max(0,min(o,maxHash))), length: 0 }
 		# Arguments get sliced into to a real array.
 		arguments: { array: (o) -> Array.prototype.slice.apply o }
 
 	# Now, we register "bling", and all the things we know how to do
 	# with it:
-	maxHash = 0xFFFFFFFF
 	_type.register "bling",
 		# Add the type test so: `$.type($()) == "bling"`.
 		is:     (o) -> o and isType $, o
-		# Bling extends array so they can convert themselves.
+		# Bling extends array, so they can convert themselves.
 		array:  (o) -> (o and o.toArray()) or []
-		# Their hash is just the sum of member hashes (order matters).
+		# Their hash is the sum of member hashes (order matters).
 		hash:   (o) -> o.map($.hash).reduce (a,x) -> ((a*a)+x) % maxHash
 		# They have a very literal string representation.
 		string: (o) -> $.symbol + "([" + o.map((x) -> $.type.lookup(x).string(x)).join(", ") + "])"
