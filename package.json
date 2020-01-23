@@ -14,7 +14,7 @@
 		"test": "make test"
 	},
 	"devDependencies": {
-		"coffeescript": "next",
+		"coffeescript": "latest",
 		"jldom": "latest",
 		"mocha": "latest",
 		"uglify-es": "latest"
