@@ -5,10 +5,15 @@ $.plugin
 	provides: "type,is,inherit,extend,defineProperty,isType,are,as,isSimple,isDefined,isEmpty"
 	depends: "compat"
 , ->
+
+	{ max, min } = Math
+	maxHash = 0xFFFFFFFF
+
 	# The core is built around a _type classifier_. Initially, this
 	# will only know how to match types (and the order to check them in).
 	# Later in this file, the type-instance resulting from classification will be
 	# extended to provide more operations, e.g. helping to construct blings.
+
 
 	# Before we build a full classifier, we need a few type-related
 	# helpers.
@@ -156,7 +161,6 @@ $.plugin
 		# Later, once other systems have extended the base type, the
 		# type-instance returned from type.lookup will do more.
 
-	maxHash = 0xFFFFFFFF
 	# Extending the type system
 	# First, we give the basic types the ability to turn into something
 	# array-like, for use by the constructor hook.
