@@ -1,12 +1,14 @@
 [$, assert] = require './setup'
 
+readAll = (g) -> (x for x from g)
+
 describe "Index/Query plugin:", ->
 	describe ".index(keyMaker)", ->
 		keyMaker = (obj) -> obj.a
 		it "creates a private index", ->
 			$([{a:1,b:2}, {a:2,b:3}]).index keyMaker
 		it "cannot query until index has been built", ->
-			assert.deepEqual $([1,2,3]).query(a:1), []
+			assert.deepEqual readAll($([1,2,3]).query(a:1)), []
 		it "can .query() after indexing", ->
 			a = $([{a:1,b:'b'},{a:2},{a:3}]).index keyMaker
 			assert.equal a.queryOne(a:1).b, 'b'
