@@ -7,12 +7,9 @@ $.plugin
 	depends: "core"
 , ->
 
-	defer = (f, ctx, args, ms, to) ->
-		clearTimeout to
-		to = setTimeout (=>
-			f.apply ctx, args
-		), ms
-		return to
+	defer = (f, ctx, args, ms, prior) ->
+		clearTimeout prior
+		return setTimeout (=> f.apply ctx, args), ms
 
 	throttle = (f, ctx, args, ms, last) ->
 		if (dt = $.now - last) > ms
@@ -31,7 +28,6 @@ $.plugin
 		debounce: (ms, f) ->
 			timeout = null
 			->
-				a = arguments
 				timeout = defer f, @, arguments, ms, timeout
 				null
 
