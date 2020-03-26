@@ -4,14 +4,6 @@ UGLIFY=node_modules/.bin/uglifyjs
 UGLIFY_OPTS?=--screw-ie8
 JLDOM=node_modules/jldom
 
-MOCHA=node_modules/.bin/mocha
-MOCHA_FMT?=dot
-MOCHA_OPTS=--require coffeescript/register \
-	--globals document,window,Bling,$$,_ \
-	-R ${MOCHA_FMT} \
-	-s 500 \
-	--bail
-
 GPP=gpp
 GPP_OPTS=-U '' '' '(' ',' ')' '(' ')' '\#' '' \
 	-M '\#' '\n' ' ' ' ' '\n' '(' ')' \
@@ -26,16 +18,13 @@ all: release
 
 release: dist/bling.js
 
-test: $(JLDOM) $(MOCHA) dist/bling.js $(filter-out setup.coffee, $(wildcard test/*.coffee))
+test: $(JLDOM) dist/bling.js $(filter-out setup.coffee, $(wildcard test/*.coffee))
 	# All tests are passing.
 
-test/bling.coffee: bling.coffee
-	# Testing $<
-	@$(MOCHA) $(MOCHA_OPTS) $@ && touch $@
-
 test/%.coffee: plugins/%.coffee bling.coffee
+	#
 	# Testing $<
-	@$(MOCHA) $(MOCHA_OPTS) $@ && touch $@
+	@$(COFFEE) $@ --bail --minimal && touch $@
 
 site: dist/bling.js test $(UGLIFY)
 	# Stashing master...
