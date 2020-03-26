@@ -8,14 +8,14 @@ describe ".StateMachine", ->
 	
 	describe ".extractCode", ->
 		test_cases = [
-			[ ((a) -> a).toString(), "s=a;" ]
+			[ "(#{((a) -> a).toString()})", "s=a;" ]
 			[ "()=>{}", "" ]
 			[ "(b)=>{return b}", "s=b" ] 
 			[ "(c)=>{ /* {}*/ return c; }", "s=c;" ]
 			[ "(a/*{*/)=>{return a;}", "s=a;" ]
 		]
 		for [f, s] in test_cases
-			it "supports: " + f, ->
+			it ("supports: " + f), ->
 				assert.equal $.StateMachine.extractCode(eval(f)), s
 		null
 
