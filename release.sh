@@ -18,7 +18,7 @@ echo Making new release: $NEW from current release: $OLD... && \
 	make site && \
 	echo Pushing to github... && \
 	git push && \
-	echo Pushing site to blingjs.com... && \
-	ssh jesse@blingjs.com "cd /var/www/blingjs.com; and git pull" && \
+	# echo Pushing site to blingjs.com... && \
+	# ssh jesse@blingjs.com "cd /var/www/blingjs.com; and git pull" && \
 	echo Publishing to npm... && \
 	npm publish
