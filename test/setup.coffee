@@ -26,7 +26,7 @@ global.reporter = {
 	minimal: (g, c, result) ->
 		process.stdout.write switch true
 			when result is passToken then "."
-			when "--bail" in process.argv then result
+			when "--bail" in process.argv then String(result?.toString() ? result)
 			else "X"
 }
 global.reporter.current = global.reporter.default;
@@ -44,7 +44,10 @@ global.describe = (groupName, func) ->
 				console.log(r)
 				process.exit(1)
 	func()
-	await Promise.all(promises)
+	try await Promise.all(promises)
+	catch err
+		console.log(err)
+		if "--bail" in process.argv then process.exit(1)
 
 passToken = "Pass"
 itPromise = (caseName, testFunc) -> new Promise (resolve, reject) ->
