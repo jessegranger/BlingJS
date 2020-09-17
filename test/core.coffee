@@ -12,6 +12,20 @@ describe "Core plugin:", ->
 					assert pass
 				finally
 					$.log.out = console.log
+		it "supports timestamps", ->
+			$.log.enableTimestamps(1)
+			data = null
+			$.log.out = (a...) -> data = a
+			ts = String(+new Date())
+			$.log "it supports timestamps"
+			assert.deepEqual data, [ ts, "it supports timestamps" ]
+		it "applies timestamps across multiple lines", ->
+			$.log.enableTimestamps(1)
+			data = null
+			$.log.out = (a...) -> data = a
+			ts = String(+new Date())
+			$.log "applies timestamps\nacross multiple\nlines"
+			assert.deepEqual data, [ ts, "applies timestamps\n#{ts} across multiple\n#{ts} lines" ]
 
 	describe "$.logger", ->
 		it "creates a logging function that applies a fixed prefix", ->
@@ -23,7 +37,7 @@ describe "Core plugin:", ->
 				assert message.indexOf("[magic] message") > -1
 			finally
 				$.log.out = console.log
-	
+
 	describe ".keysOf()", ->
 		it "returns the keys of an object", ->
 			assert.deepEqual $.keysOf({ a:1,b:2 }), ['a', 'b']
@@ -48,14 +62,14 @@ describe "Core plugin:", ->
 			assert.notEqual a,b
 		it "the new set contains the result of f(each item)", ->
 			assert.deepEqual $([1,2,3]).map(->@*@), [1,4,9]
-	
+
 	describe ".filterMap(f)", ->
 		it "mapping to null filters from the result", ->
 			assert.deepEqual $(1,2,3,4).filterMap(->
 				if @ % 2 then @*@
 				else null
 			), [1, 9]
-	
+
 	describe ".tap(f)", ->
 		it "applies f to this", ->
 			assert.deepEqual $([1,2]).tap(-> @push 3), [1,2,3]
@@ -65,7 +79,7 @@ describe "Core plugin:", ->
 			$([1,2]).tap (set) ->
 				assert.equal $.type(@), "bling"
 				assert.equal $.type(set), "bling"
-	
+
 	describe ".replaceWith", ->
 		it "copies values from array to this", ->
 			assert.deepEqual $(1,2,3,4).replaceWith([5,6,7,8]), [5,6,7,8]
