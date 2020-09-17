@@ -69,8 +69,8 @@ $.plugin
 					consume_one cb, null, result
 				else # this promise hasn't been resolved OR rejected yet
 					waiting.push cb # so save this callback for later
-					if isFinite parseFloat timeout
-						cb.timeout = $.delay timeout, =>
+					if isFinite(timeout = parseFloat timeout) and timeout > 0
+						cb.timeout = $.delay timeout, ->
 							if (i = waiting.indexOf cb) > -1
 								waiting.splice i, 1
 								consume_one cb, (err = new Error 'timeout'), undefined
@@ -166,7 +166,6 @@ $.plugin
 						if err then ret.reject err
 						else ret.resolve data
 				@
-
 			inspect: -> "{Progress[#{ret.promiseId}] #{cur}/#{max}}"
 		}, Promise()
 
