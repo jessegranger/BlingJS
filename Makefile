@@ -22,9 +22,9 @@ test: $(JLDOM) dist/bling.js $(filter-out setup.coffee, $(wildcard test/*.coffee
 	# All tests are passing.
 
 test/%.coffee: plugins/%.coffee bling.coffee
-	#
 	# Testing $<
 	@$(COFFEE) $@ --bail --minimal && touch $@
+	@echo
 
 site: dist/bling.js test $(UGLIFY)
 	# Stashing master...
