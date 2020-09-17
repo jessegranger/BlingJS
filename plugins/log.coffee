@@ -4,8 +4,8 @@ $.plugin {
 }, ->
 
 	# attempt to do less work prepending a formatted timestamp to the log
-	_t = { # we will manually format each part on it's own to avoid full reformatting each time
-		_MS: "" # as we check each level of precision higher
+	ts = { # we will manually format each part on it's own to avoid full reformatting each time
+		ms: "" # as we check each level of precision higher
 		SS: "" # if it hasnt changed then we stop formatting
 		MM: ""
 		HH: ""
@@ -14,43 +14,44 @@ $.plugin {
 		yyyy: ""
 	}
 	prior_date = 0
-	get_date_prefix = =>
+	get_date_prefix = ->
 		d = new Date()
 		delta = d - prior_date
 		prior_date = d
 		# all these ugly cases cause a short-circuit to only format as much of the date as changed
-		if (_t._MS isnt ms = $.padLeft(d.getUTCMilliseconds(), 3, "0")) or (delta % 1000) is 0
-			_t._MS = ms
-			if _t.SS isnt sec = $.padLeft d.getUTCSeconds(), 2, "0" or (delta % 60000) is 0
-				_t.SS = sec
-				if _t.MM isnt min = $.padLeft d.getUTCMinutes(), 2, "0" or (delta % 3600000) is 0
-					_t.MM = min
-					if _t.HH isnt hr = $.padLeft String(d.getUTCHours()), 2, "0" or (delta % 86400000) is 0
-						_t.HH = hr
-						if _t.dd isnt day = $.padLeft String(d.getUTCDate()), 2, "0" or (delta > 86400000)
-							_t.dd = day
-							if _t.mm isnt mon = $.padLeft String(d.getUTCMonth() + 1), 2, "0"
-								_t.mm = mon
-								_t.yyyy = String d.getUTCFullYear()
-		"#{_t.yyyy}-#{_t.mm}-#{_t.dd} #{_t.HH}:#{_t.MM}:#{_t.SS}.#{_t._MS}"
+		if (ts.ms isnt ms = $.padLeft(d.getUTCMilliseconds(), 3, "0")) or (delta % 1000) is 0
+			ts.ms = ms
+			if ts.SS isnt sec = $.padLeft d.getUTCSeconds(), 2, "0" or (delta % 60000) is 0
+				ts.SS = sec
+				if ts.MM isnt min = $.padLeft d.getUTCMinutes(), 2, "0" or (delta % 3600000) is 0
+					ts.MM = min
+					if ts.HH isnt hr = $.padLeft String(d.getUTCHours()), 2, "0" or (delta % 86400000) is 0
+						ts.HH = hr
+						if ts.dd isnt day = $.padLeft String(d.getUTCDate()), 2, "0" or (delta > 86400000)
+							ts.dd = day
+							if ts.mm isnt mon = $.padLeft String(d.getUTCMonth() + 1), 2, "0"
+								ts.mm = mon
+								ts.yyyy = String d.getUTCFullYear()
+		"#{ts.yyyy}-#{ts.mm}-#{ts.dd} #{ts.HH}:#{ts.MM}:#{ts.SS}.#{ts.ms}"
 
 	log = (a...) ->
 		if a.length
-			if p = log.pre?()
+			if p = log.pre()
+				for x,i in a
+					a[i] = x.split('\n').join('\n'+p+' ')
 				a.unshift p
 			log.out a...
 			return a[a.length-1]
 	log.out = console.log.bind console
-	log.pre = null
-	log.enableTimestamps = (level=2) ->
-		log.pre = ([
-			null
-			-> String(+new Date())
-			get_date_prefix
-		])[level]
-	log.disableTimestamps = -> log.enableTimestamps(0)
+	pres = [
+		-> null
+		-> String(+new Date())
+		get_date_prefix
+	]
+	do log.disableTimestamps = -> log.pre = pres[0]
+	log.enableTimestamps = (level=2) -> log.pre = pres[level] ? pres[0]
 
 	return $: {
 		log: log
-		logger: (prefix) -> (a...) -> a.unshift prefix; log a...
+		logger: (prefix) -> (a...) -> log prefix, a...
 	}
