@@ -1903,8 +1903,8 @@ $.plugin {
 	provides: "log, logger"
 	depends: "bound"
 }, ->
-	_t = { 
-		_MS: "" 
+	ts = { 
+		ms: "" 
 		SS: "" 
 		MM: ""
 		HH: ""
@@ -1913,42 +1913,43 @@ $.plugin {
 		yyyy: ""
 	}
 	prior_date = 0
-	get_date_prefix = =>
+	get_date_prefix = ->
 		d = new Date()
 		delta = d - prior_date
 		prior_date = d
-		if (_t._MS isnt ms = $.padLeft(d.getUTCMilliseconds(), 3, "0")) or (delta % 1000) is 0
-			_t._MS = ms
-			if _t.SS isnt sec = $.padLeft d.getUTCSeconds(), 2, "0" or (delta % 60000) is 0
-				_t.SS = sec
-				if _t.MM isnt min = $.padLeft d.getUTCMinutes(), 2, "0" or (delta % 3600000) is 0
-					_t.MM = min
-					if _t.HH isnt hr = $.padLeft String(d.getUTCHours()), 2, "0" or (delta % 86400000) is 0
-						_t.HH = hr
-						if _t.dd isnt day = $.padLeft String(d.getUTCDate()), 2, "0" or (delta > 86400000)
-							_t.dd = day
-							if _t.mm isnt mon = $.padLeft String(d.getUTCMonth() + 1), 2, "0"
-								_t.mm = mon
-								_t.yyyy = String d.getUTCFullYear()
-		"#{_t.yyyy}-#{_t.mm}-#{_t.dd} #{_t.HH}:#{_t.MM}:#{_t.SS}.#{_t._MS}"
+		if (ts.ms isnt ms = $.padLeft(d.getUTCMilliseconds(), 3, "0")) or (delta % 1000) is 0
+			ts.ms = ms
+			if ts.SS isnt sec = $.padLeft d.getUTCSeconds(), 2, "0" or (delta % 60000) is 0
+				ts.SS = sec
+				if ts.MM isnt min = $.padLeft d.getUTCMinutes(), 2, "0" or (delta % 3600000) is 0
+					ts.MM = min
+					if ts.HH isnt hr = $.padLeft String(d.getUTCHours()), 2, "0" or (delta % 86400000) is 0
+						ts.HH = hr
+						if ts.dd isnt day = $.padLeft String(d.getUTCDate()), 2, "0" or (delta > 86400000)
+							ts.dd = day
+							if ts.mm isnt mon = $.padLeft String(d.getUTCMonth() + 1), 2, "0"
+								ts.mm = mon
+								ts.yyyy = String d.getUTCFullYear()
+		"#{ts.yyyy}-#{ts.mm}-#{ts.dd} #{ts.HH}:#{ts.MM}:#{ts.SS}.#{ts.ms}"
 	log = (a...) ->
 		if a.length
-			if p = log.pre?()
+			if p = log.pre()
+				for x,i in a
+					a[i] = x.split('\n').join('\n'+p+' ')
 				a.unshift p
 			log.out a...
 			return a[a.length-1]
 	log.out = console.log.bind console
-	log.pre = null
-	log.enableTimestamps = (level=2) ->
-		log.pre = ([
-			null
-			-> String(+new Date())
-			get_date_prefix
-		])[level]
-	log.disableTimestamps = -> log.enableTimestamps(0)
+	pres = [
+		-> null
+		-> String(+new Date())
+		get_date_prefix
+	]
+	do log.disableTimestamps = -> log.pre = pres[0]
+	log.enableTimestamps = (level=2) -> log.pre = pres[level] ? pres[0]
 	return $: {
 		log: log
-		logger: (prefix) -> (a...) -> a.unshift prefix; log a...
+		logger: (prefix) -> (a...) -> log prefix, a...
 	}
 $.plugin
 	provides: "matches"
@@ -2184,8 +2185,8 @@ $.plugin
 					consume_one cb, null, result
 				else 
 					waiting.push cb 
-					if isFinite parseFloat timeout
-						cb.timeout = $.delay timeout, =>
+					if isFinite(timeout = parseFloat timeout) and timeout > 0
+						cb.timeout = $.delay timeout, ->
 							if (i = waiting.indexOf cb) > -1
 								waiting.splice i, 1
 								consume_one cb, (err = new Error 'timeout'), undefined
@@ -3063,12 +3064,9 @@ $.plugin
 	provides: "throttle"
 	depends: "core"
 , ->
-	defer = (f, ctx, args, ms, to) ->
-		clearTimeout to
-		to = setTimeout (=>
-			f.apply ctx, args
-		), ms
-		return to
+	defer = (f, ctx, args, ms, prior) ->
+		clearTimeout prior
+		return setTimeout (=> f.apply ctx, args), ms
 	throttle = (f, ctx, args, ms, last) ->
 		if (dt = $.now - last) > ms
 			last += dt
@@ -3083,7 +3081,6 @@ $.plugin
 		debounce: (ms, f) ->
 			timeout = null
 			->
-				a = arguments
 				timeout = defer f, @, arguments, ms, timeout
 				null
 		rate_limit: (ms, f) ->
@@ -3492,6 +3489,8 @@ $.plugin
 	provides: "type,is,inherit,extend,defineProperty,isType,are,as,isSimple,isDefined,isEmpty"
 	depends: "compat"
 , ->
+	{ max, min } = Math
+	maxHash = 0xFFFFFFFF
 	__toString = Object.prototype.toString
 	isType = (T, o) ->
 		if not o? then T in [o,"null","undefined"]
@@ -3573,9 +3572,8 @@ $.plugin
 		null:      { array:     -> [] }
 		undefined: { array:     -> [] }
 		array:     { array: (o) -> o }
-		number:    { array: (o) -> $.extend new Array(o), length: 0 }
+		number:    { array: (o) -> $.extend new Array(max(0,min(o,maxHash))), length: 0 }
 		arguments: { array: (o) -> Array.prototype.slice.apply o }
-	maxHash = 0xFFFFFFFF
 	_type.register "bling",
 		is:     (o) -> o and isType $, o
 		array:  (o) -> (o and o.toArray()) or []
