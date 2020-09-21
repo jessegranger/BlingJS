@@ -1931,14 +1931,18 @@ $.plugin {
 								ts.mm = mon
 								ts.yyyy = String d.getUTCFullYear()
 		"#{ts.yyyy}-#{ts.mm}-#{ts.dd} #{ts.HH}:#{ts.MM}:#{ts.SS}.#{ts.ms}"
+	multiline = (p, x) -> x.split('\n').join("\n#{p} ")
 	log = (a...) ->
 		if a.length
 			if p = log.pre()
-				for x,i in a
-					a[i] = x.split('\n').join('\n'+p+' ')
+				a = a.map (x) -> switch true
+					when 'string' is typeof x then multiline p, x
+					when $.is 'error', x then multiline p, $.debugStack x
+					else multiline p, $.toString x
 				a.unshift p
 			log.out a...
 			return a[a.length-1]
+		null
 	log.out = console.log.bind console
 	pres = [
 		-> null

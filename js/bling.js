@@ -3798,7 +3798,7 @@ table.dump td.v.bool      { background-color: #fcf; }`));
     provides: "log, logger",
     depends: "bound"
   }, function() {
-    var get_date_prefix, log, pres, prior_date, ts;
+    var get_date_prefix, log, multiline, pres, prior_date, ts;
     ts = {
       ms: "",
       SS: "",
@@ -3835,19 +3835,29 @@ table.dump td.v.bool      { background-color: #fcf; }`));
       }
       return `${ts.yyyy}-${ts.mm}-${ts.dd} ${ts.HH}:${ts.MM}:${ts.SS}.${ts.ms}`;
     };
+    multiline = function(p, x) {
+      return x.split('\n').join(`\n${p} `);
+    };
     log = function(...a) {
-      var i, i1, len1, p, x;
+      var p;
       if (a.length) {
         if (p = log.pre()) {
-          for (i = i1 = 0, len1 = a.length; i1 < len1; i = ++i1) {
-            x = a[i];
-            a[i] = x.split('\n').join('\n' + p + ' ');
-          }
+          a = a.map(function(x) {
+            switch (true) {
+              case 'string' === typeof x:
+                return multiline(p, x);
+              case $.is('error', x):
+                return multiline(p, $.debugStack(x));
+              default:
+                return multiline(p, $.toString(x));
+            }
+          });
           a.unshift(p);
         }
         log.out(...a);
         return a[a.length - 1];
       }
+      return null;
     };
     log.out = console.log.bind(console);
     pres = [
