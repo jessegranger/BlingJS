@@ -11,21 +11,37 @@ describe "Core plugin:", ->
 					$.log true
 					assert pass
 				finally
-					$.log.out = console.log
+					$.log.out = console.log.bind console
 		it "supports timestamps", ->
-			$.log.enableTimestamps(1)
-			data = null
-			$.log.out = (a...) -> data = a
-			ts = String(+new Date())
-			$.log "it supports timestamps"
-			assert.deepEqual data, [ ts, "it supports timestamps" ]
+			try
+				$.log.enableTimestamps(1)
+				data = null
+				$.log.out = (a...) -> data = a
+				ts = String(+new Date())
+				$.log "it supports timestamps"
+				assert.deepEqual data, [ ts, "it supports timestamps" ]
+			finally
+				$.log.enableTimestamps(0)
+				$.log.out = console.log.bind console
 		it "applies timestamps across multiple lines", ->
-			$.log.enableTimestamps(1)
-			data = null
-			$.log.out = (a...) -> data = a
-			ts = String(+new Date())
-			$.log "applies timestamps\nacross multiple\nlines"
-			assert.deepEqual data, [ ts, "applies timestamps\n#{ts} across multiple\n#{ts} lines" ]
+			try
+				$.log.enableTimestamps(1)
+				data = null
+				$.log.out = (a...) -> data = a
+				ts = String(+new Date())
+				$.log "applies timestamps\nacross multiple\nlines"
+				assert.deepEqual data, [ ts, "applies timestamps\n#{ts} across multiple\n#{ts} lines" ]
+			finally
+				$.log.enableTimestamps(0)
+				$.log.out = console.log.bind console
+		it "accepts non-strings", ->
+			try
+				data = null
+				$.log.out = (a...) -> data = a
+				$.log "label", e = new Error("error")
+				assert.deepEqual data, [ "label", e ]
+			finally
+				$.log.out = console.log.bind console
 
 	describe "$.logger", ->
 		it "creates a logging function that applies a fixed prefix", ->
