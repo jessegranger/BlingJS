@@ -29,9 +29,9 @@ global.reporter = {
 			when "--bail" in process.argv then String(result?.toString() ? result)
 			else "X"
 }
-global.reporter.current = global.reporter.default;
+global.reporter.current = global.reporter.default
 if "--minimal" in process.argv
-	global.reporter.current = global.reporter.minimal;
+	global.reporter.current = global.reporter.minimal
 
 clear = -> console.log '\x1b[2J'
 
@@ -41,12 +41,13 @@ global.describe = (groupName, func) ->
 		promises.push itPromise(c, t).then (r) ->
 			global.reporter.current(groupName,c,r)
 			if r isnt passToken and "--bail" in process.argv
-				console.log(r)
+				if r.code isnt 'ERR_ASSERTION'
+					console.log($.debugStack r)
 				process.exit(1)
 	func()
 	try await Promise.all(promises)
 	catch err
-		console.log(err)
+		# console.log(err)
 		if "--bail" in process.argv then process.exit(1)
 
 passToken = "Pass"
@@ -67,3 +68,8 @@ module.exports = [
 	'../dist/bling.js',
 	'assert'
 ].map require
+
+require('assert').arrayEquals = (actual, expected) ->
+	for x,i in actual
+		this.deepEqual x, expected[i], "Unexpected array item #{i}: actual: [#{actual.map($.toString).join ', '}] expected: [#{expected.map($.toString).join ', '}]"
+
