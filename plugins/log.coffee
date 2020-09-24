@@ -4,9 +4,9 @@ $.plugin {
 }, ->
 
 	# attempt to do less work prepending a formatted timestamp to the log
-	ts = { # we will manually format each part on it's own to avoid full reformatting each time
+	ts = { # we will manually format each part to avoid full reformatting each time
 		ms: "" # as we check each level of precision higher
-		SS: "" # if it hasnt changed then we stop formatting
+		SS: "" # if it hasnt changed, then we stop formatting
 		MM: ""
 		HH: ""
 		dd: ""
@@ -34,26 +34,34 @@ $.plugin {
 								ts.yyyy = String d.getUTCFullYear()
 		"#{ts.yyyy}-#{ts.mm}-#{ts.dd} #{ts.HH}:#{ts.MM}:#{ts.SS}.#{ts.ms}"
 
-	multiline = (p, x) -> x.split('\n').join("\n#{p} ")
 	log = (a...) ->
 		if a.length
-			if p = log.pre()
-				a = a.map (x) -> switch true
-					when 'string' is typeof x then multiline p, x
-					when $.is 'error', x then multiline p, $.debugStack x
-					else multiline p, $.toString x
-				a.unshift p
-			log.out a...
+			p = log.pre()
+			buf = []
+			# fill up buf with all the lines
+			for x,i in a
+				x = $.toString x
+				if -1 is x.indexOf '\n' then buf.push x
+				else x.split('\n').forEach (y) ->
+					if y?.length > 0
+						buf.push y
+						if p then buf.unshift p
+						log.out buf...
+						buf = []
+			if buf.length > 0
+				if p then buf.unshift p
+				log.out buf...
 			return a[a.length-1]
 		null
+	$.defineProperty log, "out", { configurable: false, writable: true }
 	log.out = console.log.bind console
-	pres = [
+	prefixers = [
 		-> null
 		-> String(+new Date())
 		get_date_prefix
 	]
-	do log.disableTimestamps = -> log.pre = pres[0]
-	log.enableTimestamps = (level=2) -> log.pre = pres[level] ? pres[0]
+	do log.disableTimestamps = -> log.pre = prefixers[0]
+	log.enableTimestamps = (level=2) -> log.pre = prefixers[level] ? prefixers[0]
 
 	return $: {
 		log: log
