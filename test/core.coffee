@@ -12,47 +12,86 @@ describe "Core plugin:", ->
 					assert pass
 				finally
 					$.log.out = console.log.bind console
+			it "supports multiline arguments", ->
+				try
+					data = []
+					$.log.out = (a...) -> data.push(a)
+					$.log "applies timestamps\nacross multiple\nlines with no prefix"
+					assert.deepEqual data, [
+						["applies timestamps"],
+						["across multiple"],
+						["lines with no prefix"]
+					]
+				finally
+					$.log.out = console.log.bind console
 		it "supports timestamps", ->
 			try
 				$.log.enableTimestamps(1)
-				data = null
-				$.log.out = (a...) -> data = a
+				data = []
+				$.log.out = (a...) -> data.push(a)
 				ts = String(+new Date())
 				$.log "it supports timestamps"
-				assert.deepEqual data, [ ts, "it supports timestamps" ]
+				assert.deepEqual data, [ [ ts, "it supports timestamps" ] ]
 			finally
 				$.log.enableTimestamps(0)
 				$.log.out = console.log.bind console
 		it "applies timestamps across multiple lines", ->
 			try
 				$.log.enableTimestamps(1)
-				data = null
-				$.log.out = (a...) -> data = a
+				data = []
+				$.log.out = (a...) -> data.push(a)
 				ts = String(+new Date())
 				$.log "applies timestamps\nacross multiple\nlines"
-				assert.deepEqual data, [ ts, "applies timestamps\n#{ts} across multiple\n#{ts} lines" ]
+				assert.arrayEquals data, [
+					[ts, "applies timestamps"],
+					[ts, "across multiple"],
+					[ts, "lines"]
+				]
 			finally
 				$.log.enableTimestamps(0)
 				$.log.out = console.log.bind console
-		it "accepts non-strings", ->
+		it "applies timestamps across multiple lines when they are also multiple arguments", ->
 			try
-				data = null
-				$.log.out = (a...) -> data = a
-				$.log "label", e = new Error("error")
-				assert.deepEqual data, [ "label", e ]
+				$.log.enableTimestamps(1)
+				data = []
+				$.log.out = (a...) -> data.push(a)
+				ts = String(+new Date())
+				$.log "applies timestamps\n", "across multiple\n", "lines with multiple arguments"
+				assert.arrayEquals data, [
+					[ts, "applies timestamps"],
+					[ts, "across multiple"],
+					[ts, "lines with multiple arguments"]
+				]
+			finally
+				$.log.enableTimestamps(0)
+				$.log.out = console.log.bind console
+		it "accepts errors", ->
+			try
+				data = []
+				$.log.out = (a...) -> data.push(a)
+				$.log e = new Error("error")
+				assert.arrayEquals data, $.debugStack(e).split('\n').map((x)->[x])
+			finally
+				$.log.out = console.log.bind console
+		it "accepts multiple arguments", ->
+			try
+				data = []
+				$.log.out = (a...) -> data.push(a)
+				$.log "prefix", "suffix"
+				assert.arrayEquals data, [ [ "prefix", "suffix" ] ]
 			finally
 				$.log.out = console.log.bind console
 
 	describe "$.logger", ->
 		it "creates a logging function that applies a fixed prefix", ->
 			f = $.logger('[magic]')
-			message = ""
 			try
-				$.log.out = (a...) -> message = a.join " "
+				data = []
+				$.log.out = (a...) -> data.push a
 				f "message"
-				assert message.indexOf("[magic] message") > -1
+				assert.deepEqual data, [ ["[magic]", "message"] ]
 			finally
-				$.log.out = console.log
+				$.log.out = console.log.bind console
 
 	describe ".keysOf()", ->
 		it "returns the keys of an object", ->
