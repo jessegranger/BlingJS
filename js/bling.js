@@ -1830,7 +1830,7 @@
     provides: "debug, debugStack",
     depends: "core"
   }, function() {
-    var explodeStack, protoChain;
+    var debugStack, explodeStack, protoChain;
     explodeStack = function(stack, node_modules) {
       var err, files, fs, lines, lines_cache, message, nl;
       nl = /(?:\r\n|\r|\n)/;
@@ -1894,22 +1894,28 @@
       }
       return protoChain(obj.__proto__, arr.push(obj.constructor));
     };
+    debugStack = function(error, node_modules = false) {
+      var stack;
+      stack = (function() {
+        switch (false) {
+          case !$.is('error', error):
+            return String(error.stack);
+          case !$.is('string', error):
+            return error;
+          default:
+            return String(error);
+        }
+      })();
+      return explodeStack(stack, node_modules);
+    };
+    $.type.extend({
+      error: {
+        string: debugStack
+      }
+    });
     return {
       $: {
-        debugStack: function(error, node_modules = false) {
-          var stack;
-          stack = (function() {
-            switch (false) {
-              case !$.is('error', error):
-                return String(error.stack);
-              case !$.is('string', error):
-                return error;
-              default:
-                return String(error);
-            }
-          })();
-          return explodeStack(stack, node_modules);
-        },
+        debugStack,
         protoChain: function(o) {
           return protoChain(o.__proto__, $());
         }
@@ -3798,7 +3804,7 @@ table.dump td.v.bool      { background-color: #fcf; }`));
     provides: "log, logger",
     depends: "bound"
   }, function() {
-    var get_date_prefix, log, multiline, pres, prior_date, ts;
+    var get_date_prefix, log, prefixers, prior_date, ts;
     ts = {
       ms: "",
       SS: "",
@@ -3835,32 +3841,45 @@ table.dump td.v.bool      { background-color: #fcf; }`));
       }
       return `${ts.yyyy}-${ts.mm}-${ts.dd} ${ts.HH}:${ts.MM}:${ts.SS}.${ts.ms}`;
     };
-    multiline = function(p, x) {
-      return x.split('\n').join(`\n${p} `);
-    };
     log = function(...a) {
-      var p;
+      var buf, i, i1, len1, p, x;
       if (a.length) {
-        if (p = log.pre()) {
-          a = a.map(function(x) {
-            switch (true) {
-              case 'string' === typeof x:
-                return multiline(p, x);
-              case $.is('error', x):
-                return multiline(p, $.debugStack(x));
-              default:
-                return multiline(p, $.toString(x));
-            }
-          });
-          a.unshift(p);
+        p = log.pre();
+        buf = [];
+        for (i = i1 = 0, len1 = a.length; i1 < len1; i = ++i1) {
+          x = a[i];
+          x = $.toString(x);
+          if (-1 === x.indexOf('\n')) {
+            buf.push(x);
+          } else {
+            x.split('\n').forEach(function(y) {
+              if ((y != null ? y.length : void 0) > 0) {
+                buf.push(y);
+                if (p) {
+                  buf.unshift(p);
+                }
+                log.out(...buf);
+                return buf = [];
+              }
+            });
+          }
         }
-        log.out(...a);
+        if (buf.length > 0) {
+          if (p) {
+            buf.unshift(p);
+          }
+          log.out(...buf);
+        }
         return a[a.length - 1];
       }
       return null;
     };
+    $.defineProperty(log, "out", {
+      configurable: false,
+      writable: true
+    });
     log.out = console.log.bind(console);
-    pres = [
+    prefixers = [
       function() {
         return null;
       },
@@ -3870,11 +3889,11 @@ table.dump td.v.bool      { background-color: #fcf; }`));
       get_date_prefix
     ];
     (log.disableTimestamps = function() {
-      return log.pre = pres[0];
+      return log.pre = prefixers[0];
     })();
     log.enableTimestamps = function(level = 2) {
       var ref;
-      return log.pre = (ref = pres[level]) != null ? ref : pres[0];
+      return log.pre = (ref = prefixers[level]) != null ? ref : prefixers[0];
     };
     return {
       $: {

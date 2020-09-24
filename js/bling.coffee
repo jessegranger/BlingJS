@@ -946,15 +946,14 @@ $.plugin
 	protoChain = (obj, arr) ->
 		return arr unless obj and obj.constructor
 		return protoChain obj.__proto__, arr.push obj.constructor
-	return $: {
-		debugStack: (error, node_modules=false) ->
-			stack = switch
-				when $.is 'error', error then String(error.stack)
-				when $.is 'string', error then error
-				else String(error)
-			explodeStack stack, node_modules
-		protoChain: (o) -> protoChain(o.__proto__, $())
-	}
+	debugStack = (error, node_modules=false) ->
+		stack = switch
+			when $.is 'error', error then String(error.stack)
+			when $.is 'string', error then error
+			else String(error)
+		explodeStack stack, node_modules
+	$.type.extend { error: { string: debugStack } }
+	return $: { debugStack, protoChain: (o) -> protoChain(o.__proto__, $()) }
 $.plugin
 	provides: "delay,immediate,interval"
 	depends: "is,select,extend,bound,core"
@@ -1931,26 +1930,33 @@ $.plugin {
 								ts.mm = mon
 								ts.yyyy = String d.getUTCFullYear()
 		"#{ts.yyyy}-#{ts.mm}-#{ts.dd} #{ts.HH}:#{ts.MM}:#{ts.SS}.#{ts.ms}"
-	multiline = (p, x) -> x.split('\n').join("\n#{p} ")
 	log = (a...) ->
 		if a.length
-			if p = log.pre()
-				a = a.map (x) -> switch true
-					when 'string' is typeof x then multiline p, x
-					when $.is 'error', x then multiline p, $.debugStack x
-					else multiline p, $.toString x
-				a.unshift p
-			log.out a...
+			p = log.pre()
+			buf = []
+			for x,i in a
+				x = $.toString x
+				if -1 is x.indexOf '\n' then buf.push x
+				else x.split('\n').forEach (y) ->
+					if y?.length > 0
+						buf.push y
+						if p then buf.unshift p
+						log.out buf...
+						buf = []
+			if buf.length > 0
+				if p then buf.unshift p
+				log.out buf...
 			return a[a.length-1]
 		null
+	$.defineProperty log, "out", { configurable: false, writable: true }
 	log.out = console.log.bind console
-	pres = [
+	prefixers = [
 		-> null
 		-> String(+new Date())
 		get_date_prefix
 	]
-	do log.disableTimestamps = -> log.pre = pres[0]
-	log.enableTimestamps = (level=2) -> log.pre = pres[level] ? pres[0]
+	do log.disableTimestamps = -> log.pre = prefixers[0]
+	log.enableTimestamps = (level=2) -> log.pre = prefixers[level] ? prefixers[0]
 	return $: {
 		log: log
 		logger: (prefix) -> (a...) -> log prefix, a...
