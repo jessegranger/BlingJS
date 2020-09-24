@@ -52,12 +52,13 @@ $.plugin
 		return arr unless obj and obj.constructor
 		return protoChain obj.__proto__, arr.push obj.constructor
 
-	return $: {
-		debugStack: (error, node_modules=false) ->
-			stack = switch
-				when $.is 'error', error then String(error.stack)
-				when $.is 'string', error then error
-				else String(error)
-			explodeStack stack, node_modules
-		protoChain: (o) -> protoChain(o.__proto__, $())
-	}
+	debugStack = (error, node_modules=false) ->
+		stack = switch
+			when $.is 'error', error then String(error.stack)
+			when $.is 'string', error then error
+			else String(error)
+		explodeStack stack, node_modules
+
+	$.type.extend { error: { string: debugStack } }
+
+	return $: { debugStack, protoChain: (o) -> protoChain(o.__proto__, $()) }
