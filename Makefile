@@ -23,7 +23,7 @@ test: $(JLDOM) dist/bling.js $(filter-out setup.coffee, $(wildcard test/*.coffee
 
 test/%.coffee: plugins/%.coffee bling.coffee
 	# Testing $<
-	@$(COFFEE) $@ --bail --minimal && touch $@
+	@$(COFFEE) $@ --bail --default && touch $@
 	@echo
 
 site: dist/bling.js test $(UGLIFY)
